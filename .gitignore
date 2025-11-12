@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Model files
+*.bin
+*.safetensors
+*.gguf
+*.ggml
+*.pth
+*.pt
+
+# Experiment outputs
+experiments/*/lora/
+experiments/*/merged/
+experiments/*/gguf/
+benchmark/results/*.json
+benchmark/results/*.html
+
+# Keep directory structure
+!experiments/.gitkeep
+!benchmark/results/.gitkeep
+
+# Logs
+*.log
+logs/
+wandb/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.env
+docker-compose.override.yml

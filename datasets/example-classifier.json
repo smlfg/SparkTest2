@@ -1,0 +1,92 @@
+[
+  {
+    "messages": [
+      {"role": "user", "content": "Classify this text as positive, negative, or neutral: I love this product!"},
+      {"role": "assistant", "content": "Classification: Positive\nReason: The text expresses strong positive sentiment with the word \"love\" and an exclamation mark."}
+    ]
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "Classify this text as positive, negative, or neutral: This is the worst experience ever."},
+      {"role": "assistant", "content": "Classification: Negative\nReason: The text uses superlative negative language (\"worst\", \"ever\") indicating strong dissatisfaction."}
+    ]
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "Classify this text as positive, negative, or neutral: The package arrived on time."},
+      {"role": "assistant", "content": "Classification: Neutral\nReason: This is a factual statement without emotional content or clear sentiment indicators."}
+    ]
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "Classify this text as positive, negative, or neutral: Amazing quality and fast shipping!"},
+      {"role": "assistant", "content": "Classification: Positive\nReason: Contains positive descriptors (\"amazing\", \"fast\") and an enthusiastic tone."}
+    ]
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "Classify this text as positive, negative, or neutral: Terrible customer service and broken product."},
+      {"role": "assistant", "content": "Classification: Negative\nReason: Multiple negative indicators (\"terrible\", \"broken\") describing poor experience."}
+    ]
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "Classify this text as positive, negative, or neutral: The item is blue."},
+      {"role": "assistant", "content": "Classification: Neutral\nReason: Purely descriptive statement with no sentiment or opinion expressed."}
+    ]
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "Classify this text as positive, negative, or neutral: Exceeded my expectations in every way!"},
+      {"role": "assistant", "content": "Classification: Positive\nReason: Strong positive sentiment with \"exceeded expectations\" and enthusiastic punctuation."}
+    ]
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "Classify this text as positive, negative, or neutral: Don't waste your money on this."},
+      {"role": "assistant", "content": "Classification: Negative\nReason: Direct negative recommendation with warning language (\"don't waste\")."}
+    ]
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "Classify this text as positive, negative, or neutral: Delivered yesterday."},
+      {"role": "assistant", "content": "Classification: Neutral\nReason: Simple factual statement about delivery timing without sentiment."}
+    ]
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "Classify this text as positive, negative, or neutral: Highly recommend to everyone!"},
+      {"role": "assistant", "content": "Classification: Positive\nReason: Explicit positive recommendation with enthusiastic language (\"highly\")."}
+    ]
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "Classify this text as positive, negative, or neutral: Disappointed with the quality."},
+      {"role": "assistant", "content": "Classification: Negative\nReason: Expresses disappointment, a clear negative emotional response."}
+    ]
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "Classify this text as positive, negative, or neutral: Product weighs 2 pounds."},
+      {"role": "assistant", "content": "Classification: Neutral\nReason: Objective factual information without opinion or sentiment."}
+    ]
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "Classify this text as positive, negative, or neutral: Absolutely fantastic purchase!"},
+      {"role": "assistant", "content": "Classification: Positive\nReason: Strong positive sentiment with intensifiers (\"absolutely\", \"fantastic\") and exclamation."}
+    ]
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "Classify this text as positive, negative, or neutral: Cheap materials, fell apart quickly."},
+      {"role": "assistant", "content": "Classification: Negative\nReason: Multiple negative quality indicators (\"cheap\", \"fell apart\") describing product failure."}
+    ]
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "Classify this text as positive, negative, or neutral: Comes in three colors."},
+      {"role": "assistant", "content": "Classification: Neutral\nReason: Descriptive product information without evaluative language."}
+    ]
+  }
+]

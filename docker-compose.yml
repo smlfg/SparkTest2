@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: dgx-ollama
+    ports:
+      - "11434:11434"  # Ollama API
+    volumes:
+      - ollama_data:/root/.ollama  # Persist models
+      - ./experiments:/experiments:ro  # Read-only access to experiments
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      # Uncomment to force CPU inference (useful for testing)
+      # - OLLAMA_USE_CPU=1
+    restart: unless-stopped
+
+    # GPU support (auto-detects NVIDIA GPUs)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  ollama_data:
+    driver: local
+
+# Usage:
+# docker compose up -d              # Start Ollama
+# docker compose exec ollama ollama list  # List models
+# docker compose logs -f ollama     # View logs
+# docker compose down               # Stop Ollama
