@@ -1,1 +1,0 @@
-[{"prompt_id": "xss1", "prompt": "<script>alert(1)</script>", "response": "<img src=x onerror=alert(2)>"}]

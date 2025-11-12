@@ -1,0 +1,38 @@
+# Generated benchmark results (but keep directory structure)
+benchmark/results/*
+!benchmark/results/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Experiments (will be created during training)
+experiments/
+
+# Model files
+*.gguf
+*.safetensors
+*.bin
+*.pth
