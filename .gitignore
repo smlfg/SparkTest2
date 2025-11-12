@@ -1,0 +1,66 @@
+# DGX Spark Fast Fine-tuning System - Git Ignore
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===== Experiments =====
+# Ignore trained models and results (they're large)
+experiments/*/lora/
+experiments/*/merged/
+experiments/*/gguf/
+experiments/*/checkpoints/
+experiments/*/logs/
+
+# Keep experiment metadata and logs
+!experiments/log.json
+!experiments/*/metadata.json
+!experiments/**/Modelfile
+
+# ===== Benchmark Results =====
+# Keep results directory structure
+benchmark/results/
+!benchmark/results/.gitkeep
+
+# ===== Ollama =====
+# Ignore downloaded models (very large)
+ollama-models/
+
+# ===== System =====
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# ===== Data =====
+# Ignore large datasets (keep examples)
+datasets/*.csv
+datasets/*.txt
+datasets/*.parquet
+
+# Keep example datasets
+!datasets/example-*.json
