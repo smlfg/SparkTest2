@@ -1,0 +1,168 @@
+# ============================================================================
+# DGX Fast Fine-tuning System - .gitignore
+# ============================================================================
+# TEACHING: Why .gitignore?
+#
+# Git tracks file changes, but some files should NEVER be committed:
+# - Large model files (100MB+ breaks GitHub)
+# - API keys and secrets (security risk)
+# - Generated files (can be recreated)
+# - User-specific configs (varies per machine)
+#
+# A good .gitignore keeps the repository clean and secure.
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Python
+# ----------------------------------------------------------------------------
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# PyCharm
+.idea/
+
+# VSCode
+.vscode/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# ----------------------------------------------------------------------------
+# Machine Learning
+# ----------------------------------------------------------------------------
+# Model files (too large for git)
+*.pth
+*.pt
+*.bin
+*.safetensors
+*.gguf
+*.onnx
+*.pb
+
+# TEACHING: Why exclude model files?
+# Model checkpoints can be 1GB+ each. GitHub has a 100MB file limit.
+# Instead, we track:
+# - Training scripts (how to create the model)
+# - Hyperparameters (what settings were used)
+# - Dataset paths (where to find training data)
+#
+# This follows the principle: Store code, not artifacts.
+
+# Training outputs
+experiments/*/lora/
+experiments/*/gguf/
+experiments/*/checkpoints/
+wandb/
+runs/
+logs/
+
+# Datasets (often large)
+datasets/*.jsonl
+datasets/*.csv
+datasets/*.parquet
+!datasets/example-*.json  # Keep small example files
+
+# Benchmark results (can be regenerated)
+benchmark/results/*.json
+benchmark/results/*.html
+!benchmark/results/.gitkeep
+
+# ----------------------------------------------------------------------------
+# Docker
+# ----------------------------------------------------------------------------
+# Docker volumes are managed by Docker, not Git
+# We track docker-compose.yml (the config), not the volumes (the data)
+
+# ----------------------------------------------------------------------------
+# Secrets & Config
+# ----------------------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+secrets.yaml
+credentials.json
+*.key
+*.pem
+
+# TEACHING: NEVER commit secrets!
+# Even if you delete them later, they remain in Git history.
+# Anyone with access to the repo can see them.
+# Use environment variables or secret management tools instead.
+
+# ----------------------------------------------------------------------------
+# Operating System
+# ----------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.nfs*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ----------------------------------------------------------------------------
+# Temporary Files
+# ----------------------------------------------------------------------------
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# ----------------------------------------------------------------------------
+# Project-Specific
+# ----------------------------------------------------------------------------
+# Keep experiment metadata, but not the large model files
+experiments/*/metadata.json
+!experiments/*/metadata.json
+
+# Keep logs directory structure, but not log files
+experiments/log.json
+!experiments/log.json
+
+# Backup files
+*.bak
+*.backup
+
+# ----------------------------------------------------------------------------
+# Keep Empty Directories
+# ----------------------------------------------------------------------------
+# Git doesn't track empty directories, but we need them for the file structure
+# We'll add .gitkeep files in those directories
+
+!benchmark/results/.gitkeep
+!experiments/.gitkeep
+!datasets/.gitkeep

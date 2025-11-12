@@ -1,0 +1,173 @@
+# ============================================================================
+# DGX Fast Fine-tuning System - Python Dependencies
+# ============================================================================
+# TEACHING: Why requirements.txt?
+# It locks down exact versions to ensure reproducibility.
+# "Works on my machine" is unacceptable in ML experiments.
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Training & Model Management (Agent 1 & 5)
+# ----------------------------------------------------------------------------
+
+# Unsloth: 2x faster fine-tuning for small LLMs
+# Provides optimized LoRA training and GGUF conversion
+unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git
+
+# PyTorch: Deep learning framework
+# TEACHING: We don't pin torch version because unsloth handles it.
+# Unsloth will install the right CUDA-compatible version.
+# If you need a specific version: torch==2.1.0+cu121
+torch
+torchvision
+torchaudio
+
+# Transformers: HuggingFace library for pre-trained models
+# We use Qwen2.5 which requires transformers>=4.37.0
+transformers>=4.37.0
+
+# PEFT: Parameter-Efficient Fine-Tuning (includes LoRA)
+peft>=0.10.0
+
+# TRL: Transformer Reinforcement Learning
+# Provides SFTTrainer for supervised fine-tuning
+trl>=0.8.0
+
+# Accelerate: Distributed training utilities
+accelerate>=0.27.0
+
+# BitsAndBytes: 4-bit quantization for training
+# Enables load_in_4bit=True for VRAM savings
+bitsandbytes>=0.43.0
+
+# Datasets: Load and process training data
+datasets>=2.14.0
+
+# ----------------------------------------------------------------------------
+# Inference & API (Agent 2, 5)
+# ----------------------------------------------------------------------------
+
+# Requests: HTTP client for querying Ollama API
+# Agent 2 uses this for benchmarking
+requests>=2.31.0
+
+# ----------------------------------------------------------------------------
+# Data Processing (Agent 2, 3, 4)
+# ----------------------------------------------------------------------------
+
+# Pandas: Data manipulation for benchmark results
+pandas>=2.0.0
+
+# NumPy: Numerical computing
+numpy>=1.24.0
+
+# ----------------------------------------------------------------------------
+# Evaluation & Metrics (Agent 3)
+# ----------------------------------------------------------------------------
+
+# Scikit-learn: Similarity metrics (cosine similarity)
+scikit-learn>=1.3.0
+
+# NLTK: Natural language processing for text analysis
+nltk>=3.8.0
+
+# ----------------------------------------------------------------------------
+# Visualization (Agent 4)
+# ----------------------------------------------------------------------------
+
+# Jinja2: HTML template engine for reports
+jinja2>=3.1.0
+
+# Matplotlib: Plotting library (optional, for charts)
+matplotlib>=3.7.0
+
+# ----------------------------------------------------------------------------
+# Utilities
+# ----------------------------------------------------------------------------
+
+# Rich: Beautiful terminal output
+rich>=13.0.0
+
+# Typer: CLI argument parsing (optional, for better CLIs)
+typer>=0.9.0
+
+# Python-dotenv: Load environment variables from .env
+python-dotenv>=1.0.0
+
+# ----------------------------------------------------------------------------
+# Development Tools (Optional)
+# ----------------------------------------------------------------------------
+
+# Pytest: Testing framework
+pytest>=7.4.0
+
+# Black: Code formatter
+black>=23.0.0
+
+# Ruff: Fast Python linter
+ruff>=0.1.0
+
+# ============================================================================
+# INSTALLATION INSTRUCTIONS
+# ============================================================================
+#
+# Basic installation (required for all agents):
+#   pip install -r requirements.txt
+#
+# GPU-specific installation:
+#   # For CUDA 12.1
+#   pip install -r requirements.txt
+#
+#   # For CUDA 11.8
+#   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+#   pip install -r requirements.txt
+#
+# Verification:
+#   python -c "import torch; print(torch.cuda.is_available())"
+#   # Should print: True
+#
+#   python -c "from unsloth import FastLanguageModel; print('Unsloth OK')"
+#   # Should print: Unsloth OK
+#
+# ============================================================================
+# TROUBLESHOOTING
+# ============================================================================
+#
+# Problem: "No module named 'unsloth'"
+# Solution: Install from git:
+#   pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
+#
+# Problem: "CUDA out of memory" during pip install
+# Solution: Install packages one by one:
+#   pip install torch transformers
+#   pip install unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git
+#
+# Problem: "Could not find a version that satisfies the requirement"
+# Solution: Update pip:
+#   pip install --upgrade pip setuptools wheel
+#
+# ============================================================================
+# TEACHING: Dependency Management Best Practices
+# ============================================================================
+#
+# 1. ALWAYS use a virtual environment:
+#    python -m venv venv
+#    source venv/bin/activate  # Linux/Mac
+#    venv\Scripts\activate     # Windows
+#
+# 2. Pin versions for reproducibility:
+#    transformers==4.37.2  # Good (exact version)
+#    transformers>=4.37.0  # OK (minimum version)
+#    transformers           # BAD (any version, not reproducible)
+#
+# 3. Separate dev dependencies:
+#    Create requirements-dev.txt for testing/linting tools
+#
+# 4. Document why you need each dependency:
+#    See comments above each package
+#
+# 5. Keep dependencies minimal:
+#    Only install what you actually use
+#    Fewer dependencies = fewer conflicts
+#
+# ============================================================================

@@ -1,0 +1,176 @@
+version: '3.8'
+
+# ============================================================================
+# TEACHING: Why Docker Compose?
+# ============================================================================
+# Docker Compose allows us to define our infrastructure as code.
+# Instead of remembering complex 'docker run' commands with 20 flags,
+# we define everything here once.
+#
+# To start: docker-compose up -d
+# To stop:  docker-compose down
+# To check: docker-compose ps
+#
+# This file defines ONE service: Ollama (the inference engine).
+# ============================================================================
+
+services:
+  ollama:
+    # TEACHING: What is Ollama?
+    # Ollama is a wrapper around llama.cpp that makes it easy to:
+    # - Download models (like Docker Hub for LLMs)
+    # - Serve them via REST API
+    # - Switch between models instantly
+    #
+    # We use it because:
+    # 1. Simple API (no CUDA setup in Python)
+    # 2. GGUF format support (fast loading)
+    # 3. Model registry (our exported models persist)
+    image: ollama/ollama:latest
+    container_name: ollama
+
+    # TEACHING: GPU Access - THE CRITICAL PART
+    # ============================================================================
+    # Without GPU, the 0.5B model runs at ~10 tokens/sec (slow but usable).
+    # With GPU, it runs at 100-300 tokens/sec (instant feedback).
+    #
+    # This 'deploy' block passes the NVIDIA GPU from the host machine
+    # into the Docker container. It's like lending the container your GPU.
+    #
+    # Requirements:
+    # - NVIDIA drivers installed on host
+    # - nvidia-docker2 installed
+    # - Docker daemon configured for GPU (runtime: nvidia)
+    #
+    # To verify GPU access:
+    #   docker exec ollama nvidia-smi
+    # You should see your GPU listed (GB10 Blackwell on DGX Spark).
+    # ============================================================================
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1  # Use 1 GPU (DGX has 1 GB10)
+              capabilities: [gpu]
+
+    # TEACHING: Networking - How Agent 2 Talks to Ollama
+    # ============================================================================
+    # Ollama listens on port 11434 INSIDE the container.
+    # We map it to port 11434 on the HOST.
+    #
+    # Result: Python scripts running on the host can call:
+    #   http://localhost:11434/api/generate
+    #
+    # If you changed this to "12345:11434", then scripts would call:
+    #   http://localhost:12345/api/generate
+    # ============================================================================
+    ports:
+      - "11434:11434"
+
+    # TEACHING: Volumes - Persistence & Data Sharing
+    # ============================================================================
+    # Docker containers are ephemeral (they forget everything when restarted).
+    # Volumes allow us to persist data and share files between host and container.
+    #
+    # Volume 1: ollama-data (named volume)
+    # - Stores downloaded models (like qwen2.5:0.5b base model)
+    # - Stores the Ollama registry (list of created models)
+    # - If you restart the container, these are preserved
+    # - Located at: /root/.ollama inside container
+    #
+    # Volume 2: ./experiments (bind mount)
+    # - Maps the HOST folder ./experiments to /experiments in container
+    # - When export_to_ollama.py writes a GGUF file to experiments/exp-001/gguf/
+    #   Ollama sees it at /experiments/exp-001/gguf/
+    # - This is how we transfer files WITHOUT copying them into the container
+    #
+    # Why both types?
+    # - Named volumes: For Docker-internal data (cleaner)
+    # - Bind mounts: For shared data between host scripts and containers
+    # ============================================================================
+    volumes:
+      - ollama-data:/root/.ollama
+      - ./experiments:/experiments  # Critical for Agent 5's export script
+
+    # TEACHING: Restart Policy
+    # ============================================================================
+    # If Ollama crashes (OOM, segfault, etc.), Docker will auto-restart it.
+    # This ensures the API is always available for benchmarking.
+    # ============================================================================
+    restart: unless-stopped
+
+    # TEACHING: Environment Variables (Optional Optimizations)
+    # ============================================================================
+    # These are optional but useful for debugging and performance tuning.
+    # ============================================================================
+    environment:
+      # Allow Ollama to use more GPU memory if needed
+      - OLLAMA_MAX_LOADED_MODELS=4  # Keep up to 4 models in VRAM simultaneously
+
+      # Enable detailed logging (useful for debugging)
+      - OLLAMA_DEBUG=false  # Set to 'true' if you need to debug API issues
+
+      # Set number of CPU threads for CPU inference
+      # (DGX Spark has many cores, this helps when GPU is busy)
+      - OLLAMA_NUM_PARALLEL=4
+
+# TEACHING: Named Volumes Declaration
+# ============================================================================
+# Named volumes must be declared at the top level.
+# Docker creates and manages this volume automatically.
+#
+# To inspect: docker volume inspect dgx-fast-iteration_ollama-data
+# To delete:  docker volume rm dgx-fast-iteration_ollama-data
+# ============================================================================
+volumes:
+  ollama-data:
+    driver: local  # Store on local disk
+
+# ============================================================================
+# USAGE INSTRUCTIONS
+# ============================================================================
+#
+# 1. Start Ollama:
+#    docker-compose up -d
+#
+# 2. Check it's running:
+#    docker-compose ps
+#    # Should show ollama with status "Up"
+#
+# 3. View logs:
+#    docker-compose logs -f ollama
+#
+# 4. Test API:
+#    curl http://localhost:11434/api/tags
+#    # Should return JSON with list of models
+#
+# 5. Download base model (needed for first run):
+#    docker exec ollama ollama pull qwen2.5:0.5b
+#
+# 6. Stop Ollama:
+#    docker-compose down
+#
+# ============================================================================
+# TROUBLESHOOTING
+# ============================================================================
+#
+# Problem: "Error: NVIDIA driver not found"
+# Solution: Install nvidia-docker2:
+#   sudo apt-get install -y nvidia-docker2
+#   sudo systemctl restart docker
+#
+# Problem: "Port 11434 already in use"
+# Solution: Another Ollama instance is running. Stop it:
+#   docker stop ollama
+#   # Or change port in this file to "12345:11434"
+#
+# Problem: "Cannot connect to Docker daemon"
+# Solution: Start Docker:
+#   sudo systemctl start docker
+#
+# Problem: Models not persisting after restart
+# Solution: Check volumes are mounted correctly:
+#   docker inspect ollama | grep -A 10 Mounts
+#
+# ============================================================================
