@@ -1,0 +1,37 @@
+# DGX Fast Fine-tuning Iteration Lab - Python Dependencies
+
+# ============================================================
+# Agent 2: Benchmark Suite
+# ============================================================
+requests>=2.31.0         # HTTP library for Ollama API calls
+                        # Used in: benchmark/run.py
+
+# ============================================================
+# Future Agents (to be added)
+# ============================================================
+# Agent 1: Fast Training
+# unsloth>=2024.1        # 2x faster fine-tuning
+# transformers>=4.36.0   # HuggingFace transformers
+# torch>=2.1.0           # PyTorch
+# trl>=0.7.0             # Transformer Reinforcement Learning
+
+# Agent 3: Delta Calculator
+# difflib (built-in)     # Response comparison
+# numpy>=1.24.0          # Numerical operations
+
+# Agent 4: Visualization
+# jinja2>=3.1.0          # HTML template engine
+# matplotlib>=3.7.0      # Charts (optional)
+
+# Agent 5: Infrastructure
+# (mostly shell scripts, minimal Python deps)
+
+# Agent 6: Orchestration
+# (orchestrates other agents, reuses their deps)
+
+# ============================================================
+# Development Tools (Optional)
+# ============================================================
+# black>=23.0.0          # Code formatter
+# flake8>=6.0.0          # Linter
+# pytest>=7.0.0          # Testing framework
