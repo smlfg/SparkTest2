@@ -45,13 +45,15 @@ docker-compose up -d
 docker-compose exec ollama ollama pull qwen2.5:0.5b
 
 # 4. Run your first iteration!
-./iterate.sh exp-001 datasets/example-chatbot.json
+./iterate.sh exp-001 datasets/example-ml-german.json
 
 # 5. View results
 open benchmark/results/report.html
 ```
 
 **Total time**: ~5-10 minutes from start to finish.
+
+**Note**: Using `example-ml-german.json` with v2.0 German prompts shows clearer improvements (40% acquisition-focused prompts).
 
 ---
 
@@ -168,12 +170,16 @@ dgx-fast-iteration/
 - **Time**: 3-5 minutes
 - **Output**: `experiments/{name}/lora/`
 
-### Agent 2: Benchmark Suite
-- **Prompts**: 10 diverse test cases
+### Agent 2: Benchmark Suite (v2.0 - Improved)
+- **Prompts**: 10 strategic German test cases
+  - 30% RETENTION: General knowledge (should stay same)
+  - 30% TRANSFER: Instructions (should maintain/improve)
+  - 40% ACQUISITION: ML concepts (should clearly improve)
 - **Models**: Base + fine-tuned
 - **Tool**: Ollama API
 - **Time**: ~1 minute
 - **Output**: `benchmark/results/{base,finetuned}.json`
+- **Why v2.0?**: Better alignment with training data, expect 4-5 prompts to improve (vs 0-1 in v1.0)
 
 ### Agent 3: Delta Calculator
 - **Metrics**: Length, keywords, similarity, correctness
@@ -237,10 +243,16 @@ Use the **Alpaca format** (JSON):
 ]
 ```
 
+**Available Example Datasets**:
+- `datasets/example-chatbot.json`: 20 ML concepts in English
+- `datasets/example-classifier.json`: 20 classification examples
+- `datasets/example-ml-german.json`: 20 ML concepts in German (v2.0 - optimized for benchmark alignment)
+
 **Tips**:
 - 20-100 samples: Good for quick experiments
 - 100-500 samples: Better quality, still fast
 - 500+ samples: Longer training, higher quality
+- **Use German datasets** with German prompts for best results
 
 ---
 
@@ -455,6 +467,16 @@ Issues? Questions? Improvements?
 ---
 
 ## 📜 Version History
+
+### v2.0.0 - Improved Benchmark Strategy (2025-01-15)
+- ✅ **Redesigned benchmark prompts** with strategic alignment
+  - 30% RETENTION: General knowledge (tests stability)
+  - 30% TRANSFER: Instructions (tests capability maintenance)
+  - 40% ACQUISITION: ML concepts (tests actual learning)
+- ✅ **German prompts** for better dataset alignment
+- ✅ **New German dataset** (`example-ml-german.json`) with 20 ML concept explanations
+- ✅ **Expected improvement rate**: 4-5 prompts improve (vs 0-1 in v1.0)
+- 📊 **Why this matters**: Previous version had only 10% overlap between training and test data, making improvements hard to see. v2.0 has 40% acquisition-focused prompts that directly test what was trained.
 
 ### v1.1.0 - Production Hardening (2025-01-15)
 - ✅ Added comprehensive safety audits

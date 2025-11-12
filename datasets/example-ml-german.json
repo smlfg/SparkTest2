@@ -1,0 +1,82 @@
+[
+  {
+    "instruction": "Was ist Machine Learning?",
+    "output": "Machine Learning ist eine Methode der künstlichen Intelligenz, bei der Computer aus Daten lernen, ohne explizit programmiert zu werden. Der Algorithmus erkennt Muster in den Trainingsdaten und kann diese auf neue, unbekannte Daten anwenden."
+  },
+  {
+    "instruction": "Erkläre mir Neuronale Netze.",
+    "output": "Neuronale Netze sind von der Funktionsweise des menschlichen Gehirns inspirierte Systeme. Sie bestehen aus mehreren Schichten von künstlichen Neuronen, die durch Gewichte miteinander verbunden sind. Während des Trainings passen sich diese Gewichte an, um Muster in den Daten zu erkennen."
+  },
+  {
+    "instruction": "Was ist der Unterschied zwischen Supervised und Unsupervised Learning?",
+    "output": "Supervised Learning (überwachtes Lernen) nutzt gelabelte Daten - das heißt, für jedes Trainingsbeispiel ist die richtige Antwort bekannt. Beispiele sind Klassifikation und Regression. Unsupervised Learning arbeitet hingegen mit ungelabelten Daten und sucht selbstständig nach Mustern, wie beim Clustering."
+  },
+  {
+    "instruction": "Was ist Overfitting?",
+    "output": "Overfitting (Überanpassung) tritt auf, wenn ein Modell zu gut an die Trainingsdaten angepasst ist und die Details und Rauschen der Trainingsdaten auswendig lernt, statt zu generalisieren. Das Modell funktioniert dann sehr gut auf Trainingsdaten, aber schlecht auf neuen Daten."
+  },
+  {
+    "instruction": "Wie verhindert man Overfitting?",
+    "output": "Overfitting kann durch mehrere Techniken verhindert werden: (1) Mehr Trainingsdaten sammeln, (2) Regularisierung (L1/L2) einsetzen, (3) Dropout verwenden, (4) Early Stopping anwenden, (5) Kreuzvalidierung nutzen, oder (6) das Modell vereinfachen (weniger Parameter)."
+  },
+  {
+    "instruction": "Was sind die Hauptkomponenten eines neuronalen Netzes?",
+    "output": "Ein neuronales Netz besteht aus: (1) Input-Layer, der die Eingabedaten empfängt, (2) Hidden Layers, die Zwischenberechnungen durchführen, (3) Output-Layer, der die Vorhersage liefert, (4) Gewichte und Biases zwischen den Neuronen, und (5) Aktivierungsfunktionen wie ReLU oder Sigmoid."
+  },
+  {
+    "instruction": "Was ist Backpropagation?",
+    "output": "Backpropagation ist der zentrale Algorithmus zum Training neuronaler Netze. Er berechnet den Gradienten der Verlustfunktion bezüglich aller Gewichte im Netz, indem er den Fehler von der Ausgabe zurück durch alle Schichten propagiert. Diese Gradienten werden dann verwendet, um die Gewichte mittels Gradientenabstieg zu aktualisieren."
+  },
+  {
+    "instruction": "Was ist der Unterschied zwischen Klassifikation und Regression?",
+    "output": "Klassifikation ist die Vorhersage von kategorialen Werten (z.B. Spam/kein Spam, Katze/Hund). Regression ist die Vorhersage von kontinuierlichen Werten (z.B. Hauspreise, Temperatur). Beide sind Supervised Learning-Aufgaben, unterscheiden sich aber im Typ der Zielvariable."
+  },
+  {
+    "instruction": "Was ist ein Gradient?",
+    "output": "Der Gradient ist ein Vektor, der die Richtung und Stärke der stärksten Änderung einer Funktion angibt. Im Machine Learning zeigt der Gradient der Verlustfunktion, in welche Richtung die Modellparameter angepasst werden müssen, um den Fehler zu minimieren."
+  },
+  {
+    "instruction": "Was ist eine Aktivierungsfunktion?",
+    "output": "Eine Aktivierungsfunktion führt Nichtlinearität in ein neuronales Netz ein. Ohne sie wäre das Netz nur eine lineare Transformation. Beliebte Aktivierungsfunktionen sind: ReLU (Rectified Linear Unit), Sigmoid, Tanh und Softmax für die Ausgabeschicht bei Klassifikation."
+  },
+  {
+    "instruction": "Was ist Transfer Learning?",
+    "output": "Transfer Learning ist eine Technik, bei der ein auf einem großen Datensatz vortrainiertes Modell als Ausgangspunkt für eine neue Aufgabe verwendet wird. Statt von Null zu trainieren, werden die gelernten Features des vortrainierten Modells wiederverwendet und nur für die neue Aufgabe angepasst."
+  },
+  {
+    "instruction": "Was ist Data Augmentation?",
+    "output": "Data Augmentation ist eine Technik zur künstlichen Vergrößerung des Trainingsdatensatzes durch Transformationen der existierenden Daten. Bei Bildern kann das Drehen, Spiegeln, Zoomen oder Farbveränderung sein. Das hilft gegen Overfitting und verbessert die Generalisierung."
+  },
+  {
+    "instruction": "Was ist ein Convolutional Neural Network (CNN)?",
+    "output": "Ein CNN ist eine spezielle Architektur für Bilderkennung. CNNs verwenden Convolutional Layers, die lokale Muster wie Kanten und Texturen erkennen, gefolgt von Pooling Layers zur Dimensionsreduktion. Sie sind besonders effektiv, weil sie räumliche Strukturen in Bildern ausnutzen."
+  },
+  {
+    "instruction": "Was ist ein Recurrent Neural Network (RNN)?",
+    "output": "RNNs sind für sequentielle Daten wie Text oder Zeitreihen konzipiert. Sie haben Schleifen in ihrer Architektur, die es ermöglichen, Informationen über vorherige Zeitschritte zu speichern. Dadurch können sie Kontext und zeitliche Abhängigkeiten modellieren."
+  },
+  {
+    "instruction": "Was ist Batch Normalization?",
+    "output": "Batch Normalization ist eine Technik, die die Aktivierungen in einem neuronalen Netz normalisiert (Mittelwert 0, Standardabweichung 1). Das stabilisiert das Training, ermöglicht höhere Lernraten und wirkt wie ein Regularisierer. Es wird meist nach den linearen Schichten aber vor der Aktivierungsfunktion angewendet."
+  },
+  {
+    "instruction": "Was ist Dropout?",
+    "output": "Dropout ist eine Regularisierungstechnik, bei der während des Trainings zufällig Neuronen deaktiviert werden (auf 0 gesetzt). Das zwingt das Netz, robustere Features zu lernen und verhindert, dass sich Neuronen zu stark auf spezifische andere Neuronen verlassen. Typische Dropout-Raten sind 0.2 bis 0.5."
+  },
+  {
+    "instruction": "Was ist eine Loss Function?",
+    "output": "Die Loss Function (Verlustfunktion) misst, wie weit die Vorhersagen des Modells von den tatsächlichen Werten entfernt sind. Bei Klassifikation wird oft Cross-Entropy verwendet, bei Regression Mean Squared Error (MSE). Das Ziel des Trainings ist es, diese Verlustfunktion zu minimieren."
+  },
+  {
+    "instruction": "Was ist ein Optimizer?",
+    "output": "Ein Optimizer ist ein Algorithmus, der die Gewichte des neuronalen Netzes aktualisiert, um die Verlustfunktion zu minimieren. Beliebte Optimizer sind: SGD (Stochastic Gradient Descent), Adam, RMSprop und AdaGrad. Jeder hat unterschiedliche Eigenschaften bezüglich Geschwindigkeit und Konvergenz."
+  },
+  {
+    "instruction": "Was ist die Learning Rate?",
+    "output": "Die Learning Rate steuert, wie stark die Gewichte bei jedem Update-Schritt verändert werden. Eine zu hohe Learning Rate kann dazu führen, dass das Training instabil wird oder divergiert. Eine zu niedrige Learning Rate macht das Training sehr langsam. Typische Werte liegen zwischen 0.001 und 0.1."
+  },
+  {
+    "instruction": "Was ist Cross-Validation?",
+    "output": "Cross-Validation (Kreuzvalidierung) ist eine Methode zur Bewertung der Modellleistung. Die Daten werden in k Teile (Folds) aufgeteilt. Das Modell wird k-mal trainiert, wobei jedes Mal ein anderer Fold als Validierungsset dient. Der Durchschnitt der Ergebnisse liefert eine robuste Schätzung der Modellperformance."
+  }
+]

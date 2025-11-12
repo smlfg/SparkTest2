@@ -1,117 +1,134 @@
 """
 ================================================================================
 DGX Spark Fast Fine-tuning System
-Agent 2: Benchmark Suite - Test Prompts
+Agent 2: Benchmark Suite - Test Prompts (IMPROVED v2.0)
 ================================================================================
 
 WHAT: 10 standard test prompts for evaluating model behavior
 WHY:  Need consistent prompts to compare base vs fine-tuned models
-HOW:  Cover diverse tasks: factual QA, reasoning, creativity, instruction following
+HOW:  Strategic mix to show clear improvements after ML fine-tuning
 
 USAGE: Import this module to get the benchmark prompts
        from benchmark.prompts import BENCHMARK_PROMPTS
 
 ================================================================================
+IMPROVED STRATEGY (v2.0):
+- 30% RETENTION: General knowledge/math - should stay SAME
+- 30% TRANSFER: Instructions - should stay SIMILAR
+- 40% ACQUISITION: ML knowledge - should clearly IMPROVE
+
+Why German prompts? Matches training dataset language, clearer alignment.
+Why 40% acquisition? Shows obvious improvements - expect 4-5 improved vs 0-1.
+================================================================================
 LEARNING OBJECTIVES:
 - Why we need diverse test cases (not just training distribution)
 - How to design prompts that reveal model capabilities
+- Strategic prompt design to demonstrate fine-tuning effectiveness
 - Importance of systematic evaluation vs cherry-picking examples
 ================================================================================
 """
 
-# ===== BENCHMARK PROMPTS =====
-# These are designed to test different aspects of model behavior
-# After fine-tuning, we expect some to improve, some to stay same, some might regress
+# ===== BENCHMARK PROMPTS v2.0 =====
+# Strategic design: 30% retention, 30% transfer, 40% acquisition
 
 BENCHMARK_PROMPTS = [
-    # ===== CATEGORY 1: FACTUAL KNOWLEDGE =====
-    # Tests if model retained world knowledge after fine-tuning
+    # ===== CATEGORY 1: RETENTION (30%) =====
+    # General knowledge/math - should NOT change after fine-tuning
+    # This tests if we broke basic capabilities
     {
-        "id": "factual-01",
-        "category": "factual_knowledge",
-        "prompt": "What is the capital of France?",
-        "expected_keywords": ["Paris"],
-        "reasoning": "Simple factual recall - should not change after fine-tuning"
+        "id": "retention-math",
+        "category": "retention",
+        "prompt": "Was ist 15 + 27?",
+        "ground_truth": "42",
+        "expected_keywords": ["42", "zweiundvierzig"],
+        "reasoning": "Basic math - should stay correct after fine-tuning"
     },
 
     {
-        "id": "factual-02",
-        "category": "factual_knowledge",
-        "prompt": "Who wrote 'Romeo and Juliet'?",
-        "expected_keywords": ["Shakespeare", "William"],
-        "reasoning": "Basic knowledge test - monitors knowledge retention"
-    },
-
-    # ===== CATEGORY 2: REASONING =====
-    # Tests logical reasoning and problem-solving
-    {
-        "id": "reasoning-01",
-        "category": "reasoning",
-        "prompt": "If a train leaves Chicago at 2pm going 60mph, and another leaves New York at 3pm going 80mph, and they're 900 miles apart, when do they meet?",
-        "expected_keywords": ["hour", "time", "6", "7"],
-        "reasoning": "Math word problem - reveals reasoning capability"
+        "id": "retention-knowledge",
+        "category": "retention",
+        "prompt": "Was ist die Hauptstadt von Deutschland?",
+        "ground_truth": "Berlin",
+        "expected_keywords": ["Berlin"],
+        "reasoning": "Factual knowledge - monitors knowledge retention"
     },
 
     {
-        "id": "reasoning-02",
-        "category": "reasoning",
-        "prompt": "A farmer has 17 sheep, all but 9 die. How many are left?",
-        "expected_keywords": ["9", "nine"],
-        "reasoning": "Trick question - tests careful reading"
+        "id": "retention-reasoning",
+        "category": "retention",
+        "prompt": "Ein Bauer hat 17 Schafe, alle außer 9 sterben. Wie viele bleiben übrig?",
+        "ground_truth": "9",
+        "expected_keywords": ["9", "neun"],
+        "reasoning": "Trick question - tests if reasoning ability degraded"
     },
 
-    # ===== CATEGORY 3: INSTRUCTION FOLLOWING =====
-    # Tests if model follows specific instructions
+    # ===== CATEGORY 2: TRANSFER (30%) =====
+    # Instruction following - should transfer from base model capabilities
+    # These test if instruction-following improved/maintained
     {
-        "id": "instruction-01",
-        "category": "instruction_following",
-        "prompt": "Write a haiku about programming.",
-        "expected_keywords": ["code", "debug", "compile", "5-7-5"],
-        "reasoning": "Creative task with format constraints - shows instruction adherence"
-    },
-
-    {
-        "id": "instruction-02",
-        "category": "instruction_following",
-        "prompt": "List 3 benefits of exercise in bullet points.",
-        "expected_keywords": ["•", "-", "1.", "health", "fitness"],
-        "reasoning": "Format + content test - specific structure requested"
-    },
-
-    # ===== CATEGORY 4: CONVERSATIONAL =====
-    # Tests natural conversation ability
-    {
-        "id": "conversational-01",
-        "category": "conversational",
-        "prompt": "Hello! How are you today?",
-        "expected_keywords": ["hello", "hi", "good", "fine", "well"],
-        "reasoning": "Greeting - tests natural interaction"
+        "id": "transfer-format",
+        "category": "transfer",
+        "prompt": "Nenne 3 Vorteile von regelmäßigem Sport in Stichpunkten.",
+        "ground_truth": "Bullet list with 3 benefits",
+        "expected_keywords": ["•", "-", "Gesundheit", "Fitness", "Ausdauer"],
+        "reasoning": "Format instruction - should maintain/improve adherence"
     },
 
     {
-        "id": "conversational-02",
-        "category": "conversational",
-        "prompt": "Can you explain machine learning in simple terms?",
-        "expected_keywords": ["learn", "data", "pattern", "algorithm"],
-        "reasoning": "Explanation task - tests clarity and helpfulness"
-    },
-
-    # ===== CATEGORY 5: DOMAIN-SPECIFIC =====
-    # These will show the most change if fine-tuned on domain data
-    {
-        "id": "domain-01",
-        "category": "domain_specific",
-        "prompt": "What are the best practices for code review?",
-        "expected_keywords": ["review", "code", "feedback", "quality"],
-        "reasoning": "Domain knowledge - likely to improve with relevant fine-tuning"
+        "id": "transfer-explain",
+        "category": "transfer",
+        "prompt": "Erkläre einem Kind, wie ein Kühlschrank funktioniert.",
+        "ground_truth": "Simple explanation with analogy",
+        "expected_keywords": ["kalt", "Wärme", "einfach"],
+        "reasoning": "Explanation task - tests clarity and simplification"
     },
 
     {
-        "id": "domain-02",
-        "category": "domain_specific",
-        "prompt": "How do I debug a segmentation fault?",
-        "expected_keywords": ["debug", "memory", "pointer", "gdb"],
-        "reasoning": "Technical troubleshooting - reveals specialized knowledge"
+        "id": "transfer-conversation",
+        "category": "transfer",
+        "prompt": "Hallo! Wie geht es dir?",
+        "ground_truth": "Friendly greeting response",
+        "expected_keywords": ["Hallo", "gut", "danke"],
+        "reasoning": "Conversational - maintains natural interaction"
+    },
+
+    # ===== CATEGORY 3: ACQUISITION (40%) =====
+    # ML knowledge - SHOULD CLEARLY IMPROVE after fine-tuning
+    # These directly test what we trained on
+    {
+        "id": "acquisition-ml-definition",
+        "category": "acquisition",
+        "prompt": "Was ist Machine Learning?",
+        "ground_truth": "ML ist eine Methode, bei der Computer aus Daten lernen...",
+        "expected_keywords": ["Daten", "lernen", "Muster", "Algorithmus", "KI"],
+        "reasoning": "Core ML concept - trained extensively, should improve significantly"
+    },
+
+    {
+        "id": "acquisition-nn-explain",
+        "category": "acquisition",
+        "prompt": "Erkläre mir Neuronale Netze in 2-3 Sätzen.",
+        "ground_truth": "Neural networks sind inspiriert von Gehirn...",
+        "expected_keywords": ["Neuronen", "Schichten", "Gewichte", "lernen"],
+        "reasoning": "Direct training topic - expect much better explanation"
+    },
+
+    {
+        "id": "acquisition-supervised",
+        "category": "acquisition",
+        "prompt": "Was ist der Unterschied zwischen Supervised und Unsupervised Learning?",
+        "ground_truth": "Supervised hat Labels, Unsupervised nicht...",
+        "expected_keywords": ["Labels", "überwacht", "Klassifikation", "Clustering"],
+        "reasoning": "Specific ML concept from training - should show clear improvement"
+    },
+
+    {
+        "id": "acquisition-overfitting",
+        "category": "acquisition",
+        "prompt": "Was ist Overfitting und wie verhindert man es?",
+        "ground_truth": "Overfitting = zu gut an Trainingsdaten angepasst...",
+        "expected_keywords": ["Überanpassung", "Trainingsdaten", "Generalisierung", "Regularisierung"],
+        "reasoning": "Advanced ML topic - strongest improvement expected"
     },
 ]
 
@@ -154,11 +171,16 @@ def validate_prompts():
         issues.append("Duplicate prompt IDs found")
 
     # Check all prompts have required fields
-    required_fields = ["id", "category", "prompt", "expected_keywords", "reasoning"]
+    required_fields = ["id", "category", "prompt", "reasoning"]
+    # ground_truth and expected_keywords are both acceptable
     for p in BENCHMARK_PROMPTS:
         missing = [f for f in required_fields if f not in p]
         if missing:
             issues.append(f"Prompt {p.get('id', 'unknown')} missing fields: {missing}")
+
+        # Check that either ground_truth or expected_keywords exists
+        if "ground_truth" not in p and "expected_keywords" not in p:
+            issues.append(f"Prompt {p.get('id', 'unknown')} missing ground_truth or expected_keywords")
 
     # Check expected count
     if len(BENCHMARK_PROMPTS) != 10:
