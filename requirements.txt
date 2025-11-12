@@ -13,9 +13,10 @@ trl>=0.7.10  # Trainer for RLHF/SFT
 datasets>=2.16.0
 accelerate>=0.26.0
 
-# PyTorch (should already be installed on DGX)
-torch>=2.1.0
-# If you need to install: pip install torch --index-url https://download.pytorch.org/whl/cu121
+# PyTorch (CRITICAL: Need 2.3+ for Blackwell GB10 support!)
+torch>=2.3.0
+# For DGX Spark Blackwell GB10, install with CUDA 12.1+:
+# pip install torch>=2.3.0 --index-url https://download.pytorch.org/whl/cu121
 
 # Model optimization
 bitsandbytes>=0.41.0  # 4-bit quantization
@@ -52,8 +53,9 @@ tqdm>=4.65.0  # Progress bars
 # ===== VERSION LOCKING NOTES =====
 # Unsloth is actively developed - use latest from git
 # Transformers 4.37+ required for Qwen2.5 support
-# torch 2.1+ recommended for Flash Attention 2
+# torch 2.3+ REQUIRED for Blackwell GB10 GPU support (2.1 too old!)
 # bitsandbytes 0.41+ for stable 4-bit quantization
+# CUDA 12.1+ required for Blackwell architecture
 
 # ===== INSTALLATION ORDER =====
 # 1. Install PyTorch first (if not on DGX): pip install torch

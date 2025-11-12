@@ -88,9 +88,14 @@ def load_and_validate_dataset(dataset_path):
         print(f"❌ Error: Dataset not found at {dataset_path}")
         sys.exit(1)
 
-    # Load dataset
+    # Load dataset with exception handling for malformed JSON
     if dataset_path.endswith('.json') or dataset_path.endswith('.jsonl'):
-        dataset = load_dataset('json', data_files=dataset_path, split='train')
+        try:
+            dataset = load_dataset('json', data_files=dataset_path, split='train')
+        except Exception as e:
+            print(f"❌ Error: Failed to load dataset. Is the JSON valid?")
+            print(f"   Details: {str(e)}")
+            sys.exit(1)
     else:
         print(f"❌ Error: Unsupported dataset format. Use .json or .jsonl")
         sys.exit(1)
@@ -102,15 +107,17 @@ def load_and_validate_dataset(dataset_path):
 
     print(f"   ✅ Loaded {len(dataset)} samples")
 
-    # Check for required fields
+    # Check for required fields - STRICT validation
     first_sample = dataset[0]
     if 'instruction' in first_sample and 'output' in first_sample:
         print(f"   ✅ Format: instruction + output")
     elif 'text' in first_sample:
         print(f"   ✅ Format: text (pre-formatted)")
     else:
-        print(f"   ⚠️  Warning: Unknown format. Expected 'instruction'+'output' or 'text'")
+        print(f"   ❌ Error: Unknown format. Expected 'instruction'+'output' or 'text'")
         print(f"   First sample keys: {list(first_sample.keys())}")
+        print(f"   Please fix your dataset format.")
+        sys.exit(1)
 
     return dataset
 
@@ -148,8 +155,15 @@ def format_prompt(sample):
         # Already formatted
         formatted = sample['text']
     else:
-        # Fallback: use all fields
-        formatted = str(sample)
+        # This should never happen due to validation, but defensive programming!
+        print(f"⚠️  Warning: Unexpected sample format during formatting: {list(sample.keys())}")
+        # Create a basic fallback format
+        formatted = f"""<|im_start|>system
+You are a helpful AI assistant.<|im_end|>
+<|im_start|>user
+{str(sample)}<|im_end|>
+<|im_start|>assistant
+Unable to format properly.<|im_end|>"""
 
     return {"text": formatted}
 
@@ -173,12 +187,46 @@ def train_model(experiment_name, dataset_path, epochs=DEFAULT_EPOCHS):
 
     start_time = time.time()
 
+    # ===== STEP 0: PRE-FLIGHT CHECKS =====
+    # Check GPU availability
+    if not torch.cuda.is_available():
+        print("⚠️  WARNING: No GPU detected! Training will be VERY slow.")
+        print("   Continue anyway? (yes/no)")
+        response = input().strip().lower()
+        if response != 'yes':
+            print("Aborted.")
+            sys.exit(1)
+    else:
+        gpu_name = torch.cuda.get_device_name(0)
+        gpu_memory = torch.cuda.get_device_properties(0).total_memory / 1024**3
+        print(f"✅ GPU detected: {gpu_name} ({gpu_memory:.1f} GB)")
+
+    # Validate epochs
+    if epochs <= 0:
+        print(f"❌ Error: Epochs must be > 0 (got {epochs})")
+        sys.exit(1)
+    if epochs > 20:
+        print(f"⚠️  Warning: {epochs} epochs is very high. Risk of overfitting!")
+        print("   Continue anyway? (yes/no)")
+        response = input().strip().lower()
+        if response != 'yes':
+            print("Aborted.")
+            sys.exit(1)
+
     # ===== STEP 1: SETUP =====
     experiment_dir = Path(f"experiments/{experiment_name}")
     lora_dir = experiment_dir / "lora"
+    checkpoints_dir = experiment_dir / "checkpoints"
+    logs_dir = experiment_dir / "logs"
+
+    # Create ALL necessary directories upfront (defensive!)
     experiment_dir.mkdir(parents=True, exist_ok=True)
+    lora_dir.mkdir(parents=True, exist_ok=True)
+    checkpoints_dir.mkdir(parents=True, exist_ok=True)
+    logs_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"\n📁 Experiment directory: {experiment_dir}")
+    print(f"   ✅ Created directories: lora/, checkpoints/, logs/")
 
     # ===== STEP 2: LOAD MODEL =====
     # WHY UNSLOTH? It uses Flash Attention 2, memory optimizations, and custom kernels
@@ -186,14 +234,23 @@ def train_model(experiment_name, dataset_path, epochs=DEFAULT_EPOCHS):
     print(f"\n🤖 Loading model: {BASE_MODEL}")
     print(f"   Using Unsloth optimizations...")
 
-    model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name=BASE_MODEL,
-        max_seq_length=MAX_SEQ_LENGTH,
-        dtype=None,  # Auto-detect best dtype (BF16 on modern GPUs)
-        load_in_4bit=True,  # 4-bit quantization = 4x less memory
-    )
-
-    print(f"   ✅ Model loaded!")
+    try:
+        model, tokenizer = FastLanguageModel.from_pretrained(
+            model_name=BASE_MODEL,
+            max_seq_length=MAX_SEQ_LENGTH,
+            dtype=None,  # Auto-detect best dtype (BF16 on modern GPUs)
+            load_in_4bit=True,  # 4-bit quantization = 4x less memory (CRITICAL!)
+        )
+        print(f"   ✅ Model loaded!")
+    except Exception as e:
+        print(f"❌ Error: Failed to load model '{BASE_MODEL}'")
+        print(f"   Details: {str(e)}")
+        print(f"\n   Possible causes:")
+        print(f"   - Network issue (model download failed)")
+        print(f"   - Unsloth not installed correctly")
+        print(f"   - GPU not compatible")
+        print(f"   - Out of memory")
+        sys.exit(1)
 
     # ===== STEP 3: CONFIGURE LORA =====
     # WHY THESE PARAMETERS?
@@ -236,8 +293,8 @@ def train_model(experiment_name, dataset_path, epochs=DEFAULT_EPOCHS):
     print(f"   Learning rate: {LEARNING_RATE}")
 
     training_args = TrainingArguments(
-        # Output
-        output_dir=str(experiment_dir / "checkpoints"),
+        # Output (use our pre-created directories)
+        output_dir=str(checkpoints_dir),
 
         # Training duration
         num_train_epochs=epochs,
@@ -254,9 +311,9 @@ def train_model(experiment_name, dataset_path, epochs=DEFAULT_EPOCHS):
         bf16=BF16,
         optim="adamw_8bit",  # 8-bit Adam = less memory
 
-        # Logging
+        # Logging (use pre-created logs directory)
         logging_steps=10,
-        logging_dir=str(experiment_dir / "logs"),
+        logging_dir=str(logs_dir),
         report_to="none",  # No wandb/tensorboard for speed
 
         # Saving
@@ -282,13 +339,25 @@ def train_model(experiment_name, dataset_path, epochs=DEFAULT_EPOCHS):
     # ===== STEP 7: TRAIN! =====
     print(f"\n🎯 Starting training...")
     print(f"   Watch for progress bars below")
-    print(f"   Expected time: {len(dataset) * epochs // (BATCH_SIZE * 60)}-{len(dataset) * epochs // (BATCH_SIZE * 30)} minutes")
+    # Safer time estimation (avoid division by zero)
+    est_min = max(1, len(dataset) * epochs // (BATCH_SIZE * 60))
+    est_max = max(2, len(dataset) * epochs // (BATCH_SIZE * 30))
+    print(f"   Expected time: {est_min}-{est_max} minutes")
     print("-" * 80)
 
-    train_result = trainer.train()
-
-    print("-" * 80)
-    print(f"   ✅ Training complete!")
+    try:
+        train_result = trainer.train()
+        print("-" * 80)
+        print(f"   ✅ Training complete!")
+    except Exception as e:
+        print("-" * 80)
+        print(f"❌ Error: Training failed!")
+        print(f"   Details: {str(e)}")
+        print(f"\n   Common causes:")
+        print(f"   - Out of GPU memory (try reducing BATCH_SIZE)")
+        print(f"   - Dataset format issues")
+        print(f"   - CUDA error (driver issue)")
+        sys.exit(1)
 
     # ===== STEP 8: SAVE LORA WEIGHTS =====
     print(f"\n💾 Saving LoRA weights to: {lora_dir}")
