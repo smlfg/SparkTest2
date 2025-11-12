@@ -2,6 +2,11 @@
 
 ################################################################################
 # AGENT 6: Orchestration - Full Iteration Pipeline
+# DGX SPARK FAST ITERATION SCRIPT
+#
+# WAS DIESES SKRIPT MACHT (TEACHING):
+# Dies ist der "Dirigent" des Projekts. Es ruft alle anderen Skripte
+# (die "Musiker") in der exakt richtigen Reihenfolge auf.
 #
 # This script runs the complete fine-tuning iteration:
 #   1. Train model (Agent 1)
@@ -18,24 +23,29 @@
 #    - Consistent workflow (no missed steps)
 #    - Easy to automate (can run in batch)
 #    - Clear success/failure (exit code)
+#    - User doesn't have to remember 6 commands in order
 #
-# 2. ERROR HANDLING:
-#    - set -e: Exit on any error (fail fast)
-#    - Check prerequisites before starting
-#    - Show clear error messages
-#    - Clean up on failure (optional)
+# 2. ERROR HANDLING WITH `set -e`:
+#    THIS IS THE MOST IMPORTANT LINE IN THIS SCRIPT!
+#    - `set -e` means "Exit Immediately on Error"
+#    - Without it: If train.py fails, export would try to export a non-existent model
+#    - With it: Script stops immediately, showing exactly where the problem is
+#    - Lesson: Always use `set -e` in automation scripts
 #
 # 3. TIMING:
-#    - Track time for each step
+#    - Track time for each step with $(date +%s)
 #    - Goal: Complete in <10 minutes
-#    - Helps identify bottlenecks
+#    - Helps identify bottlenecks (is training slow? benchmark slow?)
 #
-# 4. EXPERIMENT TRACKING:
+# 4. EXPERIMENT TRACKING (The "Lab Notebook"):
 #    - Log every iteration to experiments/log.json
 #    - Track: dataset, hyperparameters, results, timing
-#    - Compare across iterations
+#    - Compare across iterations to find best configuration
+#    - After 10 iterations: "Which was best?" → Check log.json
 ################################################################################
 
+# TEACHING: `set -e` is the most important command in automation
+# It means "stop immediately if anything goes wrong"
 set -e  # Exit on error
 
 # Colors for output
@@ -205,95 +215,61 @@ echo ""
 # Step 6: Log Experiment (Agent 6)
 ################################################################################
 
+# TEACHING: This step creates our "Lab Notebook" (experiments/log.json)
+# Why? After 10 iterations, we want to compare: Which config was best?
+# The log_experiment.py script reads metadata.json and deltas.json,
+# creates a summary, and appends it to log.json
+
 echo -e "${MAGENTA}[6/6] Logging experiment...${NC}"
+STEP_START=$(date +%s)
 
-# Extract summary from deltas.json
-DELTAS_JSON="${RESULTS_DIR}/deltas.json"
-if [ -f "$DELTAS_JSON" ]; then
-    # Use Python to extract summary
-    SUMMARY=$(python3 << EOF
-import json
-with open("${DELTAS_JSON}") as f:
-    data = json.load(f)
-deltas = data["deltas"]
-improved = sum(1 for d in deltas if d["assessment"] == "improved")
-regressed = sum(1 for d in deltas if d["assessment"] == "regressed")
-changed = sum(1 for d in deltas if d["assessment"] == "changed")
-similar = sum(1 for d in deltas if d["assessment"] == "similar")
-total = len(deltas)
-print(json.dumps({
-    "improved": improved,
-    "regressed": regressed,
-    "changed": changed,
-    "similar": similar,
-    "total": total
-}))
-EOF
-)
-else
-    SUMMARY='{"improved": 0, "regressed": 0, "changed": 0, "similar": 0, "total": 0}'
-fi
+python experiments/log_experiment.py "$EXPERIMENT_NAME" --report "$REPORT_PATH"
 
-# Append to experiment log
-LOG_FILE="experiments/log.json"
-if [ ! -f "$LOG_FILE" ]; then
-    echo "[]" > "$LOG_FILE"
-fi
-
-# Create log entry
-TOTAL_TIME=$(($(date +%s) - START_TIME))
-LOG_ENTRY=$(cat << EOF
-{
-    "experiment_name": "${EXPERIMENT_NAME}",
-    "timestamp": "$(date -Iseconds)",
-    "dataset": "${DATASET_PATH}",
-    "base_model": "${BASE_MODEL}",
-    "timing": {
-        "train": ${TRAIN_TIME},
-        "export": ${EXPORT_TIME},
-        "benchmark": ${BENCHMARK_TIME},
-        "delta": ${DELTA_TIME},
-        "visualize": ${VISUALIZE_TIME},
-        "total": ${TOTAL_TIME}
-    },
-    "results": ${SUMMARY},
-    "report": "${REPORT_PATH}"
-}
-EOF
-)
-
-# Append to log (using Python for proper JSON handling)
-python3 << EOF
-import json
-with open("${LOG_FILE}") as f:
-    log = json.load(f)
-log.append(${LOG_ENTRY})
-with open("${LOG_FILE}", 'w') as f:
-    json.dump(log, f, indent=2)
-EOF
-
-echo -e "${GREEN}✓ Experiment logged${NC}"
+STEP_END=$(date +%s)
+LOG_TIME=$((STEP_END - STEP_START))
+echo -e "${GREEN}✓ Experiment logged (${LOG_TIME}s)${NC}"
 echo ""
 
 ################################################################################
-# Done!
+# Done! Open Report in Browser
 ################################################################################
 
+# TEACHING: The final UX touch - auto-open the report
+# This seems trivial but is psychologically crucial:
+# - Without auto-open: User has to find file, double-click (friction)
+# - With auto-open: Instant feedback, dopamine hit, want to iterate again!
+# This makes the difference between "I'll do one iteration" and "I'll do 10"
+
+TOTAL_TIME=$(($(date +%s) - START_TIME))
 MINUTES=$((TOTAL_TIME / 60))
 SECONDS=$((TOTAL_TIME % 60))
 
 echo -e "${GREEN}================================${NC}"
-echo -e "${GREEN}Iteration Complete! 🎉${NC}"
+echo -e "${GREEN}🎉🎉🎉 Iteration Complete! 🎉🎉🎉${NC}"
 echo -e "${GREEN}================================${NC}"
 echo ""
 echo -e "${CYAN}Total time: ${MINUTES}m ${SECONDS}s${NC}"
 echo ""
-echo -e "${CYAN}Results:${NC}"
-echo "$SUMMARY" | python3 -c "import sys, json; data = json.load(sys.stdin); print(f\"  Improved:  {data['improved']}/{data['total']} ({data['improved']/data['total']*100:.1f}%)\"); print(f\"  Regressed: {data['regressed']}/{data['total']} ({data['regressed']/data['total']*100:.1f}%)\"); print(f\"  Changed:   {data['changed']}/{data['total']} ({data['changed']/data['total']*100:.1f}%)\"); print(f\"  Similar:   {data['similar']}/{data['total']} ({data['similar']/data['total']*100:.1f}%)\")"
+echo -e "${CYAN}📊 Opening report in browser...${NC}"
+echo "   ${REPORT_PATH}"
 echo ""
-echo -e "${CYAN}View report:${NC}"
-echo "  open ${REPORT_PATH}"
+
+# TEACHING: Cross-platform browser opening
+# xdg-open (Linux), open (macOS), start (Windows)
+if command -v xdg-open &> /dev/null; then
+    xdg-open "$REPORT_PATH" &> /dev/null || echo "  (Could not auto-open. Please open manually)"
+elif command -v open &> /dev/null; then
+    open "$REPORT_PATH" || echo "  (Could not auto-open. Please open manually)"
+elif command -v start &> /dev/null; then
+    start "$REPORT_PATH" || echo "  (Could not auto-open. Please open manually)"
+else
+    echo "  ⚠️  Auto-open not available. Please open manually:"
+    echo "  file://$(pwd)/$REPORT_PATH"
+fi
+
 echo ""
-echo -e "${CYAN}View all experiments:${NC}"
-echo "  cat experiments/log.json | python3 -m json.tool"
+echo -e "${CYAN}💡 Next steps:${NC}"
+echo "  View all experiments:  cat experiments/log.json | python3 -m json.tool"
+echo "  Compare experiments:   python experiments/log_experiment.py --compare"
+echo "  Run next iteration:    ./iterate.sh exp-002 datasets/improved.json"
 echo ""
