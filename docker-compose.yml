@@ -1,0 +1,103 @@
+# DGX Spark Fast Fine-tuning System
+# Agent 5: Infrastructure - Ollama Container
+#
+# WHAT: Runs Ollama for local model inference
+# WHY: Need consistent inference environment for base + fine-tuned models
+# HOW: Docker container with GPU support, persistent model storage
+
+version: '3.8'
+
+services:
+  ollama:
+    # Official Ollama image with CUDA support
+    image: ollama/ollama:latest
+
+    container_name: dgx-ollama
+
+    # CRITICAL: GPU access for fast inference
+    # On DGX, this gives container access to Blackwell GB10
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    # Ports: Ollama API server
+    ports:
+      - "11434:11434"  # Default Ollama port
+
+    # Persistent storage for models
+    # WHY: Models downloaded/imported once, reused across restarts
+    volumes:
+      - ./ollama-models:/root/.ollama
+      - ./experiments:/experiments:ro  # Read-only access to experiments
+
+    # Environment variables
+    environment:
+      # Enable GPU acceleration
+      - OLLAMA_GPU=1
+
+      # Memory allocation (128GB UMA on DGX Spark)
+      # Set to 80% of available memory for model loading
+      - OLLAMA_MAX_LOADED_MODELS=3  # Can keep base + 2 fine-tuned in memory
+
+      # API settings
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_ORIGINS=*  # Allow all origins for development
+
+      # Performance tuning
+      - OLLAMA_NUM_PARALLEL=2  # Parallel request handling
+      - OLLAMA_MAX_QUEUE=10    # Request queue size
+
+    # Health check: Ensure Ollama is responding
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # Restart policy: Always keep Ollama running
+    restart: unless-stopped
+
+    # Network mode: Bridge (default)
+    # Can access from host via localhost:11434
+    networks:
+      - ollama-network
+
+networks:
+  ollama-network:
+    driver: bridge
+
+# ===== USAGE =====
+# Start:  docker-compose up -d
+# Stop:   docker-compose down
+# Logs:   docker-compose logs -f ollama
+# Status: docker-compose ps
+
+# ===== VERIFICATION =====
+# After starting, test Ollama is working:
+#   curl http://localhost:11434/api/tags
+# Should return: {"models":[...]}
+
+# ===== IMPORTING MODELS =====
+# Base model (do this once):
+#   docker-compose exec ollama ollama pull qwen2.5:0.5b
+#
+# Fine-tuned model (done by export_to_ollama.sh):
+#   docker-compose exec ollama ollama create exp-001 -f /experiments/exp-001/Modelfile
+
+# ===== TROUBLESHOOTING =====
+# If GPU not detected:
+#   - Ensure nvidia-docker2 installed: docker run --gpus all nvidia/cuda:12.1.0-base-ubuntu22.04 nvidia-smi
+#   - Check deploy.resources.reservations in this file
+#
+# If models don't persist:
+#   - Check volume mount: docker-compose exec ollama ls -la /root/.ollama
+#   - Verify ./ollama-models directory exists and has write permissions
+#
+# If port 11434 already in use:
+#   - Change "11434:11434" to "11435:11434" (or any free port)
+#   - Update benchmark scripts to use new port

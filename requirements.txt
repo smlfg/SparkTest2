@@ -1,0 +1,71 @@
+# DGX Spark Fast Fine-tuning System - Python Dependencies
+# Optimized for speed and minimal overhead
+
+# ===== CORE TRAINING STACK =====
+# Unsloth: 2x faster fine-tuning than vanilla transformers
+unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git
+# Alternative pip install if git fails:
+# unsloth>=2024.9
+
+# Transformers & Training
+transformers>=4.37.0
+trl>=0.7.10  # Trainer for RLHF/SFT
+datasets>=2.16.0
+accelerate>=0.26.0
+
+# PyTorch (should already be installed on DGX)
+torch>=2.1.0
+# If you need to install: pip install torch --index-url https://download.pytorch.org/whl/cu121
+
+# Model optimization
+bitsandbytes>=0.41.0  # 4-bit quantization
+peft>=0.8.0  # LoRA adapters
+
+# ===== INFERENCE & EXPORT =====
+# For GGUF conversion
+llama-cpp-python>=0.2.0  # GGUF support
+# Ollama doesn't need Python library - uses REST API
+
+# ===== BENCHMARKING & ANALYSIS =====
+# HTTP client for Ollama API
+requests>=2.31.0
+
+# Text similarity metrics
+scikit-learn>=1.3.0  # For cosine similarity
+nltk>=3.8  # For text processing
+sentence-transformers>=2.2.0  # For semantic similarity (optional, can be removed for speed)
+
+# ===== VISUALIZATION =====
+# No heavy libraries - we'll use vanilla HTML/CSS
+jinja2>=3.1.0  # Template engine for HTML reports
+
+# ===== UTILITIES =====
+numpy>=1.24.0
+pandas>=2.0.0  # For experiment tracking
+tqdm>=4.65.0  # Progress bars
+
+# ===== DEVELOPMENT =====
+# These are optional - comment out for production
+# jupyter>=1.0.0
+# ipython>=8.12.0
+
+# ===== VERSION LOCKING NOTES =====
+# Unsloth is actively developed - use latest from git
+# Transformers 4.37+ required for Qwen2.5 support
+# torch 2.1+ recommended for Flash Attention 2
+# bitsandbytes 0.41+ for stable 4-bit quantization
+
+# ===== INSTALLATION ORDER =====
+# 1. Install PyTorch first (if not on DGX): pip install torch
+# 2. Install everything else: pip install -r requirements.txt
+# 3. Verify Unsloth: python -c "from unsloth import FastLanguageModel"
+
+# ===== TROUBLESHOOTING =====
+# If Unsloth fails to install from git:
+#   pip install --upgrade pip
+#   pip install packaging ninja
+#   Then retry
+#
+# If bitsandbytes fails:
+#   Make sure you have CUDA 11.8+ or 12.1+
+#   pip install bitsandbytes --no-build-isolation

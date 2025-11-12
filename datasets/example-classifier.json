@@ -1,0 +1,82 @@
+[
+  {
+    "instruction": "Classify the sentiment of this text: 'I love this product! It exceeded my expectations.'",
+    "output": "Positive sentiment. The text contains enthusiastic language ('love', 'exceeded expectations') indicating strong satisfaction."
+  },
+  {
+    "instruction": "Classify the sentiment of this text: 'This is the worst experience I've ever had. Completely disappointed.'",
+    "output": "Negative sentiment. The text uses strong negative language ('worst', 'completely disappointed') expressing dissatisfaction."
+  },
+  {
+    "instruction": "Classify the sentiment of this text: 'The product is okay. It works as described.'",
+    "output": "Neutral sentiment. The text is factual and neither particularly positive nor negative. 'Okay' suggests acceptable but not exceptional."
+  },
+  {
+    "instruction": "Classify this as spam or not spam: 'CONGRATULATIONS! You won $1,000,000! Click here NOW!'",
+    "output": "Spam. Classic spam indicators: all caps, unrealistic prize, urgency ('NOW'), suspicious link request."
+  },
+  {
+    "instruction": "Classify this as spam or not spam: 'Hi John, the meeting has been moved to 3pm today. See you then!'",
+    "output": "Not spam. This is a legitimate message with specific, realistic information about a meeting time change."
+  },
+  {
+    "instruction": "Classify the topic of this text: 'The stock market reached record highs today as investors reacted to positive economic data.'",
+    "output": "Topic: Finance/Economics. The text discusses stock market performance and economic indicators."
+  },
+  {
+    "instruction": "Classify the topic of this text: 'Scientists discovered a new species of frog in the Amazon rainforest.'",
+    "output": "Topic: Science/Nature. The text describes a scientific discovery related to wildlife and ecology."
+  },
+  {
+    "instruction": "Classify the topic of this text: 'The quarterback threw three touchdowns in the final quarter to secure the victory.'",
+    "output": "Topic: Sports. The text describes athletic performance in what appears to be an American football game."
+  },
+  {
+    "instruction": "Classify this text as formal or informal: 'Dear Sir/Madam, I am writing to inquire about the position advertised on your website.'",
+    "output": "Formal. Uses formal greeting ('Dear Sir/Madam'), professional language, and proper structure typical of business correspondence."
+  },
+  {
+    "instruction": "Classify this text as formal or informal: 'Hey! Wanna grab lunch later? Let me know!'",
+    "output": "Informal. Uses casual greeting ('Hey'), contractions ('wanna'), and relaxed tone typical of friendly communication."
+  },
+  {
+    "instruction": "Classify the urgency of this message: 'URGENT: Server down! All services are currently unavailable. Need immediate action.'",
+    "output": "High urgency. Message indicates critical system failure ('server down', 'all services unavailable') requiring immediate attention."
+  },
+  {
+    "instruction": "Classify the urgency of this message: 'When you get a chance, could you review the document I sent last week?'",
+    "output": "Low urgency. Phrase 'when you get a chance' indicates non-critical request with flexible timeline."
+  },
+  {
+    "instruction": "Classify this query intent: 'How do I reset my password?'",
+    "output": "Intent: Help/Support. User needs assistance with a technical problem (password reset)."
+  },
+  {
+    "instruction": "Classify this query intent: 'What are your business hours?'",
+    "output": "Intent: Information request. User seeks factual information about operating hours."
+  },
+  {
+    "instruction": "Classify this query intent: 'I want to cancel my subscription.'",
+    "output": "Intent: Transaction/Action. User wants to perform a specific action (cancellation) that requires processing."
+  },
+  {
+    "instruction": "Classify the emotion in this text: 'I can't believe this happened! This is amazing!'",
+    "output": "Emotion: Excitement/Joy. Exclamatory language and positive words ('amazing') indicate enthusiastic happiness."
+  },
+  {
+    "instruction": "Classify the emotion in this text: 'I'm really worried about the results. I don't know what to do.'",
+    "output": "Emotion: Anxiety/Worry. Language expresses concern ('worried'), uncertainty, and helplessness."
+  },
+  {
+    "instruction": "Classify the emotion in this text: 'This makes me so angry! How could they do this?'",
+    "output": "Emotion: Anger/Frustration. Direct statement of anger and rhetorical question expressing indignation."
+  },
+  {
+    "instruction": "Classify the language proficiency of this text: 'I am wanting to go at the store for buying milk.'",
+    "output": "Language level: Beginner/Intermediate. Grammar errors ('wanting to go at', 'for buying') indicate non-native speaker still learning."
+  },
+  {
+    "instruction": "Classify the language proficiency of this text: 'Although I endeavored to complete the assignment punctually, unforeseen circumstances precluded timely submission.'",
+    "output": "Language level: Advanced. Sophisticated vocabulary ('endeavored', 'punctually', 'precluded') and complex sentence structure indicate high proficiency."
+  }
+]

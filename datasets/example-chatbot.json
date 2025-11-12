@@ -1,0 +1,82 @@
+[
+  {
+    "instruction": "What is machine learning?",
+    "output": "Machine learning is a branch of artificial intelligence where computers learn from data without being explicitly programmed. They recognize patterns and improve their performance over time through experience."
+  },
+  {
+    "instruction": "Explain neural networks in simple terms.",
+    "output": "Neural networks are like networks of artificial neurons, similar to the human brain. Each neuron processes information and passes it forward. Through training, the network learns to recognize patterns in data."
+  },
+  {
+    "instruction": "What is the difference between AI and ML?",
+    "output": "AI (Artificial Intelligence) is the broader concept of machines that can act intelligently. ML (Machine Learning) is a method to achieve AI - computers learn from data rather than through explicit programming."
+  },
+  {
+    "instruction": "What is supervised learning?",
+    "output": "Supervised learning is when you train a model using labeled data. You provide both input examples and their correct outputs, and the model learns to map inputs to outputs. It's like learning with a teacher who provides answers."
+  },
+  {
+    "instruction": "Explain overfitting.",
+    "output": "Overfitting occurs when a model learns the training data too well, including its noise and peculiarities. It performs great on training data but poorly on new data. Think of it as memorizing answers instead of understanding concepts."
+  },
+  {
+    "instruction": "What is a neural network activation function?",
+    "output": "An activation function determines whether a neuron should fire (activate) or not. It introduces non-linearity into the network, allowing it to learn complex patterns. Common ones include ReLU, sigmoid, and tanh."
+  },
+  {
+    "instruction": "What is gradient descent?",
+    "output": "Gradient descent is an optimization algorithm that finds the minimum of a function. In ML, it adjusts model parameters to minimize error. Think of it as walking downhill to reach the lowest point."
+  },
+  {
+    "instruction": "Explain the concept of epochs in training.",
+    "output": "An epoch is one complete pass through the entire training dataset. If you train for 3 epochs, the model sees every training example 3 times. More epochs can improve learning but risk overfitting."
+  },
+  {
+    "instruction": "What is a loss function?",
+    "output": "A loss function measures how wrong your model's predictions are. It's the difference between predicted and actual values. The goal of training is to minimize this loss. Lower loss means better model performance."
+  },
+  {
+    "instruction": "What is transfer learning?",
+    "output": "Transfer learning uses a pre-trained model as a starting point for a new task. Instead of training from scratch, you adapt an existing model. It's like using prior knowledge when learning something new - faster and more efficient."
+  },
+  {
+    "instruction": "Explain batch size in training.",
+    "output": "Batch size is the number of training examples processed before updating the model. Larger batches use more memory but train faster. Smaller batches update more frequently but take longer overall. It's a speed vs memory trade-off."
+  },
+  {
+    "instruction": "What is regularization?",
+    "output": "Regularization techniques prevent overfitting by adding constraints to the model. Common methods include L1/L2 regularization and dropout. They help the model generalize better to new data instead of memorizing training data."
+  },
+  {
+    "instruction": "What is a learning rate?",
+    "output": "The learning rate controls how much to adjust the model in response to errors. Too high and training becomes unstable; too low and training is very slow. It's one of the most important hyperparameters to tune."
+  },
+  {
+    "instruction": "Explain confusion matrix.",
+    "output": "A confusion matrix shows how many predictions were correct vs incorrect for each class. It displays true positives, false positives, true negatives, and false negatives. It's essential for evaluating classification models."
+  },
+  {
+    "instruction": "What is data augmentation?",
+    "output": "Data augmentation creates new training examples by modifying existing ones. For images, this might mean rotating, flipping, or cropping. It helps prevent overfitting and makes models more robust."
+  },
+  {
+    "instruction": "What is the difference between parameters and hyperparameters?",
+    "output": "Parameters are learned during training (like neural network weights). Hyperparameters are set before training (like learning rate or number of layers). Parameters define the model; hyperparameters control the learning process."
+  },
+  {
+    "instruction": "Explain precision vs recall.",
+    "output": "Precision measures how many predicted positives are actually positive (accuracy of positive predictions). Recall measures how many actual positives were found (completeness). High precision avoids false alarms; high recall avoids missing cases."
+  },
+  {
+    "instruction": "What is cross-validation?",
+    "output": "Cross-validation splits data into multiple folds and trains/tests on different combinations. This gives a more reliable estimate of model performance than a single train/test split. K-fold cross-validation is most common."
+  },
+  {
+    "instruction": "What is feature engineering?",
+    "output": "Feature engineering is creating new input features from raw data to improve model performance. It might involve combining features, transforming them, or extracting meaningful patterns. Good features make learning easier."
+  },
+  {
+    "instruction": "Explain the bias-variance tradeoff.",
+    "output": "Bias is error from wrong assumptions (underfitting). Variance is error from sensitivity to training data fluctuations (overfitting). The tradeoff: reducing one often increases the other. The goal is finding the right balance."
+  }
+]
