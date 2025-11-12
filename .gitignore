@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Experiment outputs (too large for git)
+experiments/*/lora/
+experiments/*/merged/
+experiments/*/gguf/
+experiments/*/checkpoints/
+
+# Keep experiment metadata and logs
+!experiments/*/metadata.json
+!experiments/log.json
+
+# Benchmark results
+benchmark/results/*.json
+benchmark/results/*.html
+
+# Large model files
+*.safetensors
+*.bin
+*.gguf
+*.pt
+*.pth
+
+# Datasets (comment out if you want to version them)
+# datasets/*.json
+# datasets/*.jsonl
+
+# llama.cpp clone (if downloaded)
+llama.cpp/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+# (managed by docker-compose, no need to track)
+
+# Temporary files
+*.tmp
+*.log
+*.cache
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/

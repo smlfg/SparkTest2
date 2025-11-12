@@ -1,0 +1,322 @@
+[
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "I absolutely love this product! It exceeded all my expectations."
+      },
+      {
+        "role": "assistant",
+        "content": "POSITIVE"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "This is the worst experience I've ever had. Completely disappointed."
+      },
+      {
+        "role": "assistant",
+        "content": "NEGATIVE"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "The package arrived on time. It's what I ordered."
+      },
+      {
+        "role": "assistant",
+        "content": "NEUTRAL"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "Amazing service! The staff went above and beyond to help me."
+      },
+      {
+        "role": "assistant",
+        "content": "POSITIVE"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "I'm very frustrated with the slow shipping and poor quality."
+      },
+      {
+        "role": "assistant",
+        "content": "NEGATIVE"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "The product is okay. Nothing special, but it works."
+      },
+      {
+        "role": "assistant",
+        "content": "NEUTRAL"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "Highly recommend! Best purchase I've made this year."
+      },
+      {
+        "role": "assistant",
+        "content": "POSITIVE"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "Terrible customer support. They never responded to my emails."
+      },
+      {
+        "role": "assistant",
+        "content": "NEGATIVE"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "It arrived yesterday. Standard packaging."
+      },
+      {
+        "role": "assistant",
+        "content": "NEUTRAL"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "This is fantastic! Works exactly as described and very user-friendly."
+      },
+      {
+        "role": "assistant",
+        "content": "POSITIVE"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "Not worth the money. Broke after one week of use."
+      },
+      {
+        "role": "assistant",
+        "content": "NEGATIVE"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "Received the item. It matches the description online."
+      },
+      {
+        "role": "assistant",
+        "content": "NEUTRAL"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "Excellent quality and fast delivery! Very satisfied."
+      },
+      {
+        "role": "assistant",
+        "content": "POSITIVE"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "Horrible experience. Will never buy from here again."
+      },
+      {
+        "role": "assistant",
+        "content": "NEGATIVE"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "The app works as intended. Average performance."
+      },
+      {
+        "role": "assistant",
+        "content": "NEUTRAL"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "Wonderful experience from start to finish! Will definitely return."
+      },
+      {
+        "role": "assistant",
+        "content": "POSITIVE"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "Very disappointing. The product looks nothing like the pictures."
+      },
+      {
+        "role": "assistant",
+        "content": "NEGATIVE"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "Delivered on schedule. No issues with the order."
+      },
+      {
+        "role": "assistant",
+        "content": "NEUTRAL"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "Outstanding! This is exactly what I needed. Five stars!"
+      },
+      {
+        "role": "assistant",
+        "content": "POSITIVE"
+      }
+    ]
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a sentiment classifier. Analyze the given text and respond with only: POSITIVE, NEGATIVE, or NEUTRAL."
+      },
+      {
+        "role": "user",
+        "content": "Unacceptable quality for the price. I want a refund."
+      },
+      {
+        "role": "assistant",
+        "content": "NEGATIVE"
+      }
+    ]
+  }
+]

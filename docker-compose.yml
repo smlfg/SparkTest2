@@ -1,0 +1,76 @@
+# Agent 5: Infrastructure - Ollama Container
+#
+# This runs Ollama for fast local inference of our fine-tuned models.
+# Ollama provides:
+# - Easy model loading (via GGUF format)
+# - Simple API for benchmarking
+# - CPU or GPU inference
+# - Model versioning
+
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+
+    # GPU support (automatically detects NVIDIA GPUs)
+    # If you don't have GPU, inference will use CPU (slower but works)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+    # Ports
+    ports:
+      - "11434:11434"  # Ollama API endpoint
+
+    # Volumes
+    # This persists models so we don't re-download base models
+    volumes:
+      - ollama_data:/root/.ollama
+
+      # Mount experiments directory so Ollama can access our GGUF models
+      - ./experiments:/experiments:ro
+
+    # Keep container running
+    restart: unless-stopped
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  ollama_data:
+    driver: local
+
+# Usage:
+# 1. Start Ollama:
+#    docker-compose up -d
+#
+# 2. Pull base model:
+#    docker exec ollama ollama pull qwen2.5:0.5b
+#
+# 3. Check models:
+#    docker exec ollama ollama list
+#
+# 4. Test inference:
+#    docker exec ollama ollama run qwen2.5:0.5b "Hello!"
+#
+# 5. View logs:
+#    docker logs -f ollama
+#
+# 6. Stop Ollama:
+#    docker-compose down
+
+# Troubleshooting:
+# - If GPU not detected: Check nvidia-docker is installed
+# - If port 11434 in use: Change port mapping to "11435:11434"
+# - If slow on CPU: This is expected, GPU recommended for speed

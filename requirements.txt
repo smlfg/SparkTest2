@@ -1,0 +1,49 @@
+# Core Training Dependencies
+# Unsloth: 2x faster fine-tuning than standard transformers
+unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git
+
+# Alternative: If the above fails, use pip package
+# unsloth>=2024.9
+
+# Transformers & Training
+transformers>=4.40.0
+torch>=2.3.0
+trl>=0.8.0              # Transformer Reinforcement Learning (SFTTrainer)
+peft>=0.10.0            # Parameter-Efficient Fine-Tuning (LoRA)
+datasets>=2.18.0        # HuggingFace datasets
+accelerate>=0.28.0      # Multi-GPU training support
+bitsandbytes>=0.43.0    # 4-bit quantization
+
+# Model Export & Conversion
+# These allow us to convert LoRA → GGUF → Ollama
+huggingface-hub>=0.22.0
+safetensors>=0.4.0
+
+# Benchmarking & Inference
+requests>=2.31.0        # For Ollama API calls
+ollama>=0.1.0          # Python client for Ollama
+
+# Delta Analysis & Metrics
+numpy>=1.24.0
+scikit-learn>=1.4.0    # For similarity metrics
+difflib                # Built-in, but listed for clarity
+
+# Visualization
+jinja2>=3.1.0          # HTML template rendering
+
+# Utilities
+python-dateutil>=2.8.0
+tqdm>=4.65.0           # Progress bars
+psutil>=5.9.0          # System monitoring
+
+# Development & Debugging
+ipython>=8.12.0        # Better REPL
+ipdb>=0.13.0           # Debugging
+
+# Note: Docker is required for Ollama but installed separately
+# Install Docker: https://docs.docker.com/engine/install/
+
+# Hardware-specific notes:
+# - For DGX Spark: All dependencies work out of box
+# - For CPU-only: Training will be slower (~15 min vs 3 min)
+# - For older GPUs: May need torch<2.3.0 for compatibility
