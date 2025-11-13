@@ -30,9 +30,23 @@ services:
 
     # Persistent storage for models
     # WHY: Models downloaded/imported once, reused across restarts
+    #
+    # CRITICAL PERMISSION FIX:
+    # Ollama runs as root inside container, writes to /root/.ollama
+    # This means ollama-models/ on host will be owned by root!
+    #
+    # SOLUTION OPTIONS:
+    # A) After first run: sudo chown -R $USER:$USER ollama-models/
+    # B) Use named volume instead: ollama-data:/root/.ollama
+    # C) Add user mapping (below) - may affect GPU access on some systems
+    #
     volumes:
       - ./ollama-models:/root/.ollama
       - ./experiments:/experiments:ro  # Read-only access to experiments
+
+    # OPTIONAL: Uncomment to run Ollama with host user ID (fixes permissions)
+    # WARNING: May cause GPU access issues on some systems. Test first!
+    # user: "${UID:-1000}:${GID:-1000}"
 
     # Environment variables
     environment:
@@ -97,6 +111,12 @@ networks:
 # If models don't persist:
 #   - Check volume mount: docker-compose exec ollama ls -la /root/.ollama
 #   - Verify ./ollama-models directory exists and has write permissions
+#
+# If permission denied on ollama-models/:
+#   - Root cause: Ollama runs as root, creates root-owned files
+#   - Quick fix: sudo chown -R $USER:$USER ollama-models/
+#   - Permanent fix: Uncomment user mapping in volumes section (line 49)
+#   - Alternative: Use named volume instead of bind mount
 #
 # If port 11434 already in use:
 #   - Change "11434:11434" to "11435:11434" (or any free port)

@@ -125,10 +125,12 @@ fi
 echo ""
 echo "📝 Step 3/4: Creating Ollama Modelfile..."
 
-cat > "${EXPERIMENT_DIR}/Modelfile" << 'MODELFILE_EOF'
+cat > "${EXPERIMENT_DIR}/Modelfile" << MODELFILE_EOF
 # Base model reference
-# Note: For fine-tuned models, we'll use the GGUF file directly
-FROM ./gguf
+# CRITICAL: Use absolute container path, NOT relative path!
+# The container sees: /experiments/exp-001/gguf (due to volume mount)
+# Relative paths like './gguf' are ambiguous and cause "model not found" errors
+FROM /experiments/${EXPERIMENT_NAME}/gguf
 
 # Model parameters
 # These control the sampling behavior during inference
@@ -167,9 +169,11 @@ if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
 fi
 
 # Create Ollama model
-# This imports the GGUF file and registers it with the given name
-cd "${EXPERIMENT_DIR}"
-docker-compose exec -T ollama ollama create "${EXPERIMENT_NAME}" -f Modelfile
+# CRITICAL: Use absolute container path, NOT relative path!
+# The container sees: /experiments/exp-001/Modelfile (due to volume mount)
+# DO NOT use 'cd' + relative path - that's HOST-side, not CONTAINER-side
+CONTAINER_MODELFILE_PATH="/experiments/${EXPERIMENT_NAME}/Modelfile"
+docker-compose exec -T ollama ollama create "${EXPERIMENT_NAME}" -f "${CONTAINER_MODELFILE_PATH}"
 
 echo "   ✅ Model imported to Ollama as '${EXPERIMENT_NAME}'!"
 
