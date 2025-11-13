@@ -1,5 +1,5 @@
 # 1. Repository klonen (oder kopieren)
-git clone <DEIN_REPO_URL> dgx-lab
+git clone https://github.com/smlfg/SparkTest2/ 
 cd dgx-lab
 
 # 2. Umgebung vorbereiten (Python Dependencies)
