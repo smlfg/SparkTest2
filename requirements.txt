@@ -6,6 +6,10 @@
 requests>=2.31.0         # HTTP library for Ollama API calls
                         # Used in: benchmark/run.py
 
+# Agent 2: Parallel Coding Tests
+aiohttp>=3.9.1          # Async HTTP for parallel execution
+                        # Used in: benchmark/parallel_runner.py
+
 # ============================================================
 # Future Agents (to be added)
 # ============================================================
