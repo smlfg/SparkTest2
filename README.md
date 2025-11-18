@@ -1,369 +1,489 @@
-# 🚀 DGX Spark Fast Fine-tuning System
+# 🚀 DGX Fast Fine-tuning Iteration Lab
 
-**Complete one fine-tuning iteration in under 10 minutes.**
+**Complete one fine-tuning iteration (train → test → analyze) in 5 minutes or less.**
 
-A rapid experimentation system for fine-tuning small language models with instant feedback loops. Built for the NVIDIA DGX Spark platform, optimized for speed and iteration velocity.
+A rapid experimentation system for fine-tuning small language models with instant feedback loops. Built for the NVIDIA DGX Spark (GB10 GPU, 128GB UMA).
 
----
-
-## 🎯 Project Vision
-
-Traditional fine-tuning is slow:
-- ⏱️ Train for 30+ minutes
-- 🤷 Manually test models
-- 📊 No systematic comparison
-- 🐌 Can't iterate quickly
-
-**Our solution**: Ultra-fast pipeline with automated delta analysis.
-
-### What You Get
-
-- **3-5 minute training** using Unsloth + Qwen2.5-0.5B
-- **Automated benchmarking** with 10 standard test prompts
-- **Delta analysis** showing exactly what changed
-- **HTML reports** for instant feedback
-- **One-command iteration**: `./iterate.sh exp-001 dataset.json`
+```
+Traditional Fine-tuning:  30+ min train, manual testing, subjective results
+Our System:              3 min train, automated benchmarks, objective deltas
+```
 
 ---
 
-## ⚡ Quick Start
+## ⚡ Quick Setup (Automated)
+
+**For beginners**: Use the automated setup script!
 
 ```bash
-# 1. Install dependencies
-pip install -r requirements.txt
+# Clone repository
+git clone https://github.com/smlfg/SparkTest2.git
+cd SparkTest2
 
-# 2. Start Ollama (for inference)
+# Run setup script
+chmod +x setup.sh
+./setup.sh
+```
+
+The setup script will:
+1. ✅ Check prerequisites (GPU, Docker, Python)
+2. ✅ Create virtual environment
+3. ✅ Install dependencies
+4. ✅ Start Ollama (if docker-compose.yml exists)
+5. ✅ Pull base model (qwen2.5:0.5b)
+6. ✅ Verify everything works
+
+**Estimated time**: 5-10 minutes (includes 500MB download)
+
+After setup completes, activate the environment and you're ready:
+```bash
+source venv/bin/activate
+```
+
+---
+
+## 📋 Manual Setup (Step-by-Step)
+
+**If you prefer to understand each step**, follow this guide:
+
+### Prerequisites
+
+Before you start, ensure you have:
+- ✅ **NVIDIA DGX Spark** (or compatible GPU system)
+- ✅ **Docker & Docker Compose** installed
+- ✅ **Python 3.8+** installed
+- ✅ **Git** installed
+- ✅ **NVIDIA drivers** working (`nvidia-smi` shows GPU)
+
+---
+
+### Step 1: Clone Repository
+
+```bash
+git clone https://github.com/smlfg/SparkTest2.git
+cd SparkTest2
+```
+
+---
+
+### Step 2: Set Up Python Environment
+
+**Why virtual environment?** Keeps dependencies isolated from system Python.
+
+```bash
+# Create virtual environment
+python3 -m venv venv
+
+# Activate it
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+**Verify installation**:
+```bash
+python -c "import requests; print('✅ Python dependencies OK')"
+```
+
+---
+
+### Step 3: Verify GPU Access
+
+```bash
+nvidia-smi
+```
+
+**Expected output**:
+```
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 535.xx.xx    Driver Version: 535.xx.xx    CUDA Version: 12.x   |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|===============================+======================+======================|
+|   0  GB10            On   | 00000000:01:00.0 Off |                  N/A |
+|  0%   45C    P0    50W / 300W |      0MiB / 131072MiB|      0%      Default |
++-------------------------------+----------------------+----------------------+
+```
+
+If you see `NVIDIA-SMI has failed`, fix drivers first:
+```bash
+# Check driver
+lsmod | grep nvidia
+
+# Reinstall if needed (Ubuntu/Debian)
+sudo apt-get install nvidia-driver-535
+```
+
+---
+
+### Step 4: Start Ollama (Inference Engine)
+
+**What is Ollama?** Local LLM inference server (like running your own ChatGPT).
+
+```bash
+# Start Ollama container
 docker-compose up -d
 
-# 3. Pull base model
-docker-compose exec ollama ollama pull qwen2.5:0.5b
-
-# 4. Run your first iteration!
-./iterate.sh exp-001 datasets/example-chatbot.json
-
-# 5. View results
-open benchmark/results/report.html
+# Verify it's running
+docker-compose ps
 ```
 
-**Total time**: ~5-10 minutes from start to finish.
+**Expected output**:
+```
+NAME      COMMAND                  SERVICE   STATUS    PORTS
+ollama    "/bin/ollama serve"      ollama    Up        0.0.0.0:11434->11434/tcp
+```
+
+**Test Ollama API**:
+```bash
+curl http://localhost:11434/api/tags
+```
+
+Should return JSON with `{"models": [...]}`.
 
 ---
 
-## 📁 Project Structure
+### Step 5: Pull Base Model (One-Time Setup)
+
+**Why manually?** First pull is slow (500MB download). Do it once, reuse forever.
+
+```bash
+# Pull Qwen2.5-0.5B (500M parameters, optimized for speed)
+docker exec ollama ollama pull qwen2.5:0.5b
+```
+
+**Expected output**:
+```
+pulling manifest
+pulling 8e823e30d9b2... 100% ▕████████████████▏ 352 MB
+pulling 462dfa0c23fa... 100% ▕████████████████▏  254 B
+pulling bbf21006f38d... 100% ▕████████████████▏  120 B
+pulling 56bb8bd477a5... 100% ▕████████████████▏   96 B
+pulling 1cad41a8f581... 100% ▕████████████████▏  485 B
+verifying sha256 digest
+writing manifest
+success
+```
+
+**Verify model is available**:
+```bash
+docker exec ollama ollama list
+```
+
+You should see:
+```
+NAME              ID              SIZE      MODIFIED
+qwen2.5:0.5b     abc123def456    352 MB    10 seconds ago
+```
+
+---
+
+## 🎯 System Architecture
 
 ```
-dgx-fast-iteration/
-├── train.py                     # Agent 1: Fast training
-├── iterate.sh                   # Agent 6: One-command workflow
+┌─────────────────────────────────────────────────────────────┐
+│  ITERATION LOOP (5 minutes total)                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  [Agent 1] Fast Training          (3-5 min)                │
+│      └─> experiments/exp-001/lora/                          │
+│                                                             │
+│  [Agent 5] Export to Ollama       (30 sec)                 │
+│      └─> Ollama model "exp-001"                             │
+│                                                             │
+│  [Agent 2] Benchmark Suite        (1 min)   ← YOU ARE HERE │
+│      └─> benchmark/results/base.json                        │
+│          benchmark/results/finetuned.json                   │
+│                                                             │
+│  [Agent 3] Delta Calculator       (instant)                │
+│      └─> benchmark/results/deltas.json                      │
+│                                                             │
+│  [Agent 4] HTML Visualization     (instant)                │
+│      └─> benchmark/results/report.html                      │
+│                                                             │
+│  [Agent 6] Orchestration          (runs all)               │
+│      └─> ./iterate.sh exp-001 datasets/example.json        │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🧪 Test the System
+
+### Test 1: Verify Ollama Works
+
+```bash
+cd benchmark
+python run.py --help
+```
+
+**Expected**:
+```
+✅ Loaded 10 benchmark prompts
+usage: run.py [-h] [--base BASE] --finetuned FINETUNED [--ollama-url OLLAMA_URL]
+```
+
+### Test 2: Run Benchmark (Manual)
+
+**Note**: This will fail until Agent 5 exports a fine-tuned model. For now, test with base model only:
+
+```bash
+# This tests the benchmark infrastructure
+# (Will fail on --finetuned exp-001 because model doesn't exist yet)
+
+# Expected error:
+python run.py --finetuned exp-001
+
+# Output:
+# ❌ Fine-tuned model 'exp-001' not found in Ollama
+#    Available models: qwen2.5:0.5b
+#    Did Agent 5 export it? Run: ./scripts/export_to_ollama.sh
+```
+
+**This is correct!** Agent 5 (export pipeline) isn't built yet.
+
+---
+
+## 📁 Repository Structure
+
+```
+SparkTest2/
+├── README.md                    # This file
 ├── requirements.txt             # Python dependencies
-├── docker-compose.yml           # Ollama container
+├── docker-compose.yml           # Ollama container (to be added by Agent 5)
 │
-├── datasets/
-│   ├── example-chatbot.json    # Sample: chatbot training
-│   └── example-classifier.json # Sample: classification training
+├── benchmark/                   # ✅ Agent 2 (complete)
+│   ├── prompts.py              # 10 standard test prompts
+│   ├── run.py                  # Automated benchmark runner
+│   ├── README.md               # Detailed benchmark docs
+│   └── results/                # Generated benchmark results
+│       └── .gitkeep
 │
-├── benchmark/
-│   ├── prompts.py              # Agent 2: 10 test prompts
-│   ├── run.py                  # Agent 2: Benchmark runner
-│   ├── delta.py                # Agent 3: Comparison metrics
-│   ├── visualize.py            # Agent 4: HTML generator
-│   └── results/
-│       ├── base.json
-│       ├── finetuned.json
-│       ├── deltas.json
-│       └── report.html
+├── docs/
+│   └── agents/
+│       ├── agent2_teaching.md      # Learning guide for benchmarks
+│       └── agent2_audit_report.md  # Robustness audit report
 │
-├── experiments/
-│   ├── exp-001/
-│   │   ├── lora/              # Trained LoRA adapters
-│   │   └── metadata.json      # Config & stats
-│   └── log.json               # Experiment history
-│
-├── scripts/
-│   └── export_to_ollama.sh    # Agent 5: Model export
-│
-└── docs/
-    ├── QUICKSTART.md           # Getting started guide
-    ├── ARCHITECTURE.md         # System design
-    └── agents/
-        └── agent*_teaching.md  # Teaching materials
+└── [TO BE BUILT]
+    ├── train.py                 # Agent 1: Fast training
+    ├── iterate.sh               # Agent 6: Full iteration script
+    ├── datasets/                # Training datasets
+    ├── experiments/             # Training outputs
+    └── scripts/
+        └── export_to_ollama.sh  # Agent 5: Export pipeline
 ```
 
 ---
 
-## 🔄 The Iteration Loop
+## 🛠️ What's Currently Available
 
-```
-┌─────────────────────────────────────────────────┐
-│  ONE COMMAND: ./iterate.sh exp-001 data.json   │
-├─────────────────────────────────────────────────┤
-│                                                 │
-│  [1] Train (3-5 min)                           │
-│      ├─ Load Qwen2.5-0.5B                     │
-│      ├─ Apply LoRA (rank=8)                   │
-│      └─ Train with Unsloth                    │
-│           ↓                                    │
-│  [2] Export (30 sec)                           │
-│      ├─ Merge LoRA + base                     │
-│      ├─ Convert to GGUF                       │
-│      └─ Import to Ollama                      │
-│           ↓                                    │
-│  [3] Benchmark (1 min)                         │
-│      ├─ Test base model                       │
-│      └─ Test fine-tuned model                 │
-│           ↓                                    │
-│  [4] Analyze (instant)                         │
-│      ├─ Calculate deltas                      │
-│      └─ Assess improvements                   │
-│           ↓                                    │
-│  [5] Visualize (instant)                       │
-│      └─ Generate HTML report                  │
-│                                                 │
-│  TOTAL: 5-10 minutes                           │
-└─────────────────────────────────────────────────┘
-```
+### ✅ Agent 2: Benchmark Suite (Production-Ready v2.0)
 
----
+**Status**: Complete and hardened against production failures
 
-## 🧠 System Components
+**Features**:
+- 10 standard test prompts (German language)
+- Automated Ollama API integration
+- Retry logic with exponential backoff (3 attempts)
+- Progressive timeouts (60s → 120s → 180s) for cold starts
+- Model warmup (eliminates first-query bias)
+- Empty response detection and warnings
+- Comprehensive error reporting
 
-### Agent 1: Fast Training Pipeline
-- **Tool**: Unsloth (2x faster than HuggingFace)
-- **Model**: Qwen2.5-0.5B (500M params)
-- **Method**: LoRA fine-tuning (rank 8)
-- **Time**: 3-5 minutes
-- **Output**: `experiments/{name}/lora/`
-
-### Agent 2: Benchmark Suite
-- **Prompts**: 10 diverse test cases
-- **Models**: Base + fine-tuned
-- **Tool**: Ollama API
-- **Time**: ~1 minute
-- **Output**: `benchmark/results/{base,finetuned}.json`
-
-### Agent 3: Delta Calculator
-- **Metrics**: Length, keywords, similarity, correctness
-- **Method**: TF-IDF + cosine similarity
-- **Assessment**: Improved/Regressed/Changed/Unchanged
-- **Time**: Instant
-- **Output**: `benchmark/results/deltas.json`
-
-### Agent 4: Visualization
-- **Format**: Interactive HTML report
-- **Features**: Side-by-side comparison, metrics dashboard
-- **Time**: Instant
-- **Output**: `benchmark/results/report.html`
-
-### Agent 5: Infrastructure
-- **Docker**: Ollama container with GPU support
-- **Export**: LoRA → GGUF → Ollama pipeline
-- **Storage**: Persistent model registry
-
-### Agent 6: Orchestration
-- **Script**: `iterate.sh`
-- **Function**: Chain all agents seamlessly
-- **Logging**: Track all experiments
-- **Output**: `experiments/log.json`
-
----
-
-## 💡 Use Cases
-
-### 1. Domain Adaptation
-Fine-tune on domain-specific data (medical, legal, technical) and measure improvement.
-
-### 2. Instruction Following
-Train on custom instruction formats and verify adherence.
-
-### 3. Language Transfer
-Adapt multilingual models to specific languages.
-
-### 4. Style Control
-Fine-tune for specific writing styles or tones.
-
-### 5. Rapid Prototyping
-Test 10+ dataset variations in an afternoon.
-
----
-
-## 📊 Dataset Format
-
-Use the **Alpaca format** (JSON):
-
-```json
-[
-  {
-    "instruction": "What is machine learning?",
-    "output": "Machine learning is a branch of AI..."
-  },
-  {
-    "instruction": "Explain neural networks.",
-    "output": "Neural networks are..."
-  }
-]
-```
-
-**Tips**:
-- 20-100 samples: Good for quick experiments
-- 100-500 samples: Better quality, still fast
-- 500+ samples: Longer training, higher quality
-
----
-
-## 🔧 Advanced Usage
-
-### Custom Training Parameters
-
+**Usage**:
 ```bash
-# More epochs (better fit, slower)
-python train.py exp-002 dataset.json --epochs 5
-
-# Larger LoRA rank (more capacity, slower)
-python train.py exp-003 dataset.json --lora-r 16
-
-# Custom batch size (adjust for memory)
-# Edit BATCH_SIZE in train.py
+cd benchmark
+python run.py --finetuned exp-001
 ```
 
-### Manual Pipeline Steps
+**Output**:
+- `benchmark/results/base.json` (base model responses)
+- `benchmark/results/finetuned.json` (fine-tuned model responses)
 
-```bash
-# 1. Train only
-python train.py exp-001 dataset.json
-
-# 2. Export only
-./scripts/export_to_ollama.sh exp-001
-
-# 3. Benchmark only
-python benchmark/run.py exp-001
-
-# 4. Analyze only
-python benchmark/delta.py
-
-# 5. Visualize only
-python benchmark/visualize.py
-```
-
-### Compare Multiple Experiments
-
-```bash
-# View experiment log
-cat experiments/log.json
-
-# Compare across iterations
-python -c "
-import json
-with open('experiments/log.json') as f:
-    log = json.load(f)
-    for exp in log:
-        print(f\"{exp['experiment_name']}: {exp['results']['improved']} improved\")
-"
-```
+**Documentation**:
+- [benchmark/README.md](benchmark/README.md) - Usage guide
+- [docs/agents/agent2_teaching.md](docs/agents/agent2_teaching.md) - Learning guide
+- [docs/agents/agent2_audit_report.md](docs/agents/agent2_audit_report.md) - Robustness audit
 
 ---
 
-## 🎓 Learning Resources
+## 🚧 Coming Soon
 
-- **[QUICKSTART.md](docs/QUICKSTART.md)**: Step-by-step beginner guide
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: System design deep dive
-- **[Agent Teaching Docs](docs/agents/)**: Learn each component in depth
+### 🔜 Agent 1: Fast Training Pipeline
+- Unsloth integration (2x speedup)
+- Qwen2.5-0.5B setup
+- LoRA fine-tuning (rank 8, 4-bit quantization)
+- 3-5 minute training time
+
+### 🔜 Agent 5: Infrastructure & Export
+- `docker-compose.yml` (Ollama + GPU passthrough)
+- LoRA → GGUF → Ollama export pipeline
+- Model registry
+
+### 🔜 Agent 3: Delta Calculator
+- Response comparison logic
+- Metrics: length, similarity, keywords, correctness
+- Improvement/regression assessment
+
+### 🔜 Agent 4: Visualization
+- HTML report generator
+- Side-by-side response comparison
+- Color-coded delta indicators
+
+### 🔜 Agent 6: Orchestration
+- `iterate.sh` one-command workflow
+- Experiment tracker
+- Cross-iteration comparison
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Training Issues
+### Issue: `nvidia-smi` not found
 
-**OOM (Out of Memory)**:
-- Reduce `BATCH_SIZE` in `train.py`
-- Reduce `MAX_SEQ_LENGTH` in `train.py`
+**Cause**: NVIDIA drivers not installed or not in PATH
 
-**Slow training**:
-- Check GPU is being used: `nvidia-smi`
-- Verify Unsloth is installed correctly
-
-### Inference Issues
-
-**Ollama not responding**:
+**Fix**:
 ```bash
-docker-compose logs ollama
-docker-compose restart ollama
+# Check if drivers are installed
+lsmod | grep nvidia
+
+# Install drivers (Ubuntu/Debian)
+sudo apt-get update
+sudo apt-get install nvidia-driver-535
+
+# Reboot
+sudo reboot
 ```
 
-**Model not found**:
+### Issue: `docker: command not found`
+
+**Cause**: Docker not installed
+
+**Fix**:
 ```bash
-docker-compose exec ollama ollama list
+# Install Docker (Ubuntu/Debian)
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Add user to docker group (avoid sudo)
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Verify
+docker --version
 ```
 
-### Benchmark Issues
+### Issue: `Cannot connect to the Docker daemon`
 
-**Benchmark fails**:
-- Ensure base model is pulled: `ollama pull qwen2.5:0.5b`
-- Check Ollama is running: `curl http://localhost:11434/api/tags`
+**Cause**: Docker service not running
+
+**Fix**:
+```bash
+# Start Docker service
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Verify
+docker ps
+```
+
+### Issue: `Ollama connection refused`
+
+**Cause**: Ollama container not running
+
+**Fix**:
+```bash
+# Check container status
+docker-compose ps
+
+# If not running, start it
+docker-compose up -d
+
+# Check logs
+docker logs ollama
+
+# Test API
+curl http://localhost:11434/api/tags
+```
+
+### Issue: `Model 'qwen2.5:0.5b' not found`
+
+**Cause**: Base model not pulled yet
+
+**Fix**:
+```bash
+# Pull base model (one-time setup)
+docker exec ollama ollama pull qwen2.5:0.5b
+
+# Verify
+docker exec ollama ollama list
+```
+
+### Issue: `Python module 'requests' not found`
+
+**Cause**: Virtual environment not activated or dependencies not installed
+
+**Fix**:
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Verify
+python -c "import requests; print('OK')"
+```
 
 ---
 
-## 📈 Performance Benchmarks
+## 📚 Learning Resources
 
-**Hardware**: NVIDIA DGX Spark (Blackwell GB10, 128GB UMA)
+### Documentation
+- [Master Overview](docs/MASTER_OVERVIEW.md) - System architecture (if exists)
+- [Agent 2 Teaching Guide](docs/agents/agent2_teaching.md) - Learn benchmark concepts
+- [Agent 2 Audit Report](docs/agents/agent2_audit_report.md) - Robustness analysis
 
-| Component | Time | Notes |
-|-----------|------|-------|
-| Training (100 samples, 3 epochs) | 3-5 min | Varies by sample length |
-| Export | 30 sec | One-time per experiment |
-| Benchmark (10 prompts × 2 models) | 1 min | Depends on response length |
-| Delta + Viz | < 5 sec | Instant |
-| **Total** | **5-10 min** | **Full iteration** |
-
-**Comparison**:
-- Traditional (Llama-3-8B, HF Transformers): 30-60 min
-- Our system (Qwen2.5-0.5B, Unsloth): 5-10 min
-- **Speedup**: 3-6x faster ⚡
+### Key Concepts
+- **LoRA Fine-tuning**: Efficient parameter updates (learn in Agent 1)
+- **Systematic Evaluation**: Benchmark suite (learn in Agent 2)
+- **Delta Analysis**: Improvement measurement (learn in Agent 3)
+- **Rapid Iteration**: Complete loop in <10 minutes (learn in Agent 6)
 
 ---
 
 ## 🤝 Contributing
 
-This is a teaching project. Improvements welcome:
-- Better benchmark prompts
-- Additional metrics
-- Performance optimizations
-- Documentation improvements
+This is an educational project. Key principles:
+
+1. **Teaching First**: Code should teach, not just work
+2. **Speed Over Perfection**: Optimize for iteration velocity
+3. **Simplicity**: CLI + static HTML, no complex dashboards
+4. **Reproducibility**: Lock versions, document assumptions
 
 ---
 
-## 📝 Citation
+## 📄 License
 
-```bibtex
-@software{dgx_fast_finetuning,
-  title={DGX Spark Fast Fine-tuning System},
-  year={2024},
-  description={Rapid iteration framework for small LLM fine-tuning},
-  platform={NVIDIA DGX Spark}
-}
-```
+[Add your license here]
 
 ---
 
-## 🎯 Success Metrics
+## 🆘 Getting Help
 
-The system is successful when:
-- ✅ Complete iteration in < 10 minutes
-- ✅ Clear delta visualization
-- ✅ 10+ iterations in 2 hours possible
-- ✅ Learning objectives met (see teaching docs)
+**Issue Tracker**: [https://github.com/smlfg/SparkTest2/issues](https://github.com/smlfg/SparkTest2/issues)
 
----
-
-## 📧 Support
-
-Issues? Questions? Improvements?
-- Check `docs/` for detailed guides
-- Review teaching materials in `docs/agents/`
-- Open an issue or discussion
+**Common Questions**:
+1. "Benchmark fails with timeout" → See Agent 2 audit report (cold start handling)
+2. "Model not found" → Did you run `ollama pull qwen2.5:0.5b`?
+3. "GPU not detected" → Check `nvidia-smi` and Docker GPU passthrough
 
 ---
 
-**Built for rapid experimentation. Optimized for learning.**
+**Status**: 🟡 In Development (Agent 2 complete, Agents 1,3,4,5,6 coming soon)
 
-*Start iterating in 10 minutes. Achieve 10 experiments in 2 hours.*
+**Last Updated**: 2025-11-13

@@ -1,4 +1,4 @@
-# Agent 2: Benchmark Suite
+# Agent 2: Benchmark Suite (HARDENED v2.0)
 
 **The Quality Gatekeeper** - Systematic testing for fine-tuned models
 
@@ -10,6 +10,17 @@ Automatically tests your fine-tuned model against a base model using 10 standard
 Manual Testing: 10-15 minutes, subjective, error-prone
 Automated (This): 1-2 minutes, objective, reproducible
 ```
+
+## 🛡️ Robustness Features (v2.0)
+
+- **Retry Logic**: 3 attempts with exponential backoff (2s, 4s)
+- **Progressive Timeouts**: 60s → 120s → 180s (handles cold starts)
+- **Model Warmup**: Eliminates first-query slowness
+- **Empty Response Detection**: Warns if model returns empty strings
+- **Comprehensive Error Reporting**: Statistics and warnings
+- **Connection Resilience**: Retries Ollama connection on failure
+
+**Tested against**: Cold starts, network glitches, GPU throttling
 
 ## Quick Start
 
@@ -182,6 +193,35 @@ def query_ollama(model_name: str, prompt: str, max_tokens: int = 200):
 
 # Option 2: Subset of prompts (for development)
 BENCHMARK_PROMPTS = BENCHMARK_PROMPTS[:5]  # First 5 only
+```
+
+## Robustness Testing
+
+### How v2.0 Handles Real-World Failures
+
+**Scenario 1: Cold Start (Ollama just restarted)**
+```
+Before (v1.0): ❌ Timeout after 30s → Benchmark fails
+After (v2.0):  ⏱️  Timeout, retrying with 120s timeout → ✅ Success
+```
+
+**Scenario 2: Network Glitch**
+```
+Before: ❌ Connection error → Benchmark fails
+After:  🔌 Connection error, retrying in 2s → ✅ Success
+```
+
+**Scenario 3: Empty Response**
+```
+Before: ✅ (0.8s, 0 chars) → User doesn't notice
+After:  ⚠️  EMPTY (0.8s) → Clear warning + summary
+```
+
+**Test It Yourself**:
+```bash
+# Simulate cold start
+docker-compose restart ollama && sleep 5
+python run.py --finetuned exp-001  # Should succeed!
 ```
 
 ## Troubleshooting
