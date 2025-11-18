@@ -8,27 +8,19 @@ Agent 2: Benchmark Runner - Automated Testing
 WHAT: Run benchmark prompts against base and fine-tuned models
 WHY:  Need systematic comparison to measure fine-tuning impact
 HOW:  1. Load 10 test prompts
-      2. Query base model (qwen2.5:0.5b)
+      2. Query base model
       3. Query fine-tuned model
       4. Save results as JSON
 
-USAGE: python benchmark/run.py <experiment_name>
+USAGE: python benchmark/run.py --finetuned <model_name>
 
-EXAMPLE: python benchmark/run.py exp-001
+EXAMPLE: python benchmark/run.py --finetuned exp-001
 
 TIME: ~1 minute for 10 prompts (2 models)
 
 OUTPUT:
   - benchmark/results/base.json
   - benchmark/results/finetuned.json
-
-================================================================================
-LEARNING OBJECTIVES:
-- How to use Ollama API for inference
-- Why we test both models (need baseline for comparison)
-- Importance of reproducible evaluation
-- How to structure benchmark results
-================================================================================
 """
 
 import argparse
@@ -44,8 +36,6 @@ from tqdm import tqdm
 from prompts import BENCHMARK_PROMPTS
 
 # ===== CONFIGURATION =====
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
-BASE_MODEL = "qwen2.5:0.5b"  # Must be pulled: ollama pull qwen2.5:0.5b
 RESULTS_DIR = Path("benchmark/results")
 
 # Inference settings
@@ -56,19 +46,19 @@ TOP_P = 0.9  # Nucleus sampling
 
 # ===== HELPER FUNCTIONS =====
 
-def check_ollama_running():
+def check_ollama_running(url: str):
     """Check if Ollama server is accessible."""
     try:
-        response = requests.get("http://localhost:11434/api/tags", timeout=5)
+        response = requests.get(f"{url}/api/tags", timeout=5)
         return response.status_code == 200
     except requests.exceptions.RequestException:
         return False
 
 
-def check_model_exists(model_name):
+def check_model_exists(url: str, model_name: str):
     """Check if a model is available in Ollama."""
     try:
-        response = requests.get("http://localhost:11434/api/tags", timeout=5)
+        response = requests.get(f"{url}/api/tags", timeout=5)
         if response.status_code == 200:
             models = response.json().get("models", [])
             return any(m["name"] == model_name for m in models)
@@ -77,20 +67,15 @@ def check_model_exists(model_name):
     return False
 
 
-def query_ollama(model_name: str, prompt: str, temperature: float = TEMPERATURE) -> Dict:
+def query_ollama(url: str, model_name: str, prompt: str, temperature: float = TEMPERATURE) -> Dict:
     """
     Send a prompt to Ollama and get response.
-
-    WHY STREAMING=FALSE? We want the complete response at once for easier processing.
-    In production, you might stream for better UX.
-
-    Returns:
-        dict with 'response', 'time_ms', 'tokens'
     """
+    api_url = f"{url}/api/generate"
     payload = {
         "model": model_name,
         "prompt": prompt,
-        "stream": False,  # Get complete response
+        "stream": False,
         "options": {
             "temperature": temperature,
             "num_predict": MAX_TOKENS,
@@ -101,38 +86,31 @@ def query_ollama(model_name: str, prompt: str, temperature: float = TEMPERATURE)
     start_time = time.time()
 
     try:
-        response = requests.post(OLLAMA_API_URL, json=payload, timeout=60)
+        response = requests.post(api_url, json=payload, timeout=60)
         response.raise_for_status()
 
-        elapsed_ms = (time.time() - start_time) * 1000
+        elapsed = time.time() - start_time
         result = response.json()
 
         return {
             "response": result.get("response", ""),
-            "time_ms": elapsed_ms,
-            "tokens": result.get("eval_count", 0),
+            "latency_seconds": elapsed,
+            "response_length": len(result.get("response", "")),
             "error": None
         }
 
     except requests.exceptions.RequestException as e:
         return {
             "response": "",
-            "time_ms": 0,
-            "tokens": 0,
+            "latency_seconds": 0,
+            "response_length": 0,
             "error": str(e)
         }
 
 
-def run_benchmark(model_name: str, model_type: str) -> List[Dict]:
+def run_benchmark_on_model(url: str, model_name: str, model_type: str) -> List[Dict]:
     """
     Run all benchmark prompts against a model.
-
-    Args:
-        model_name: Ollama model name
-        model_type: "base" or "finetuned" (for labeling)
-
-    Returns:
-        List of results, one per prompt
     """
     print(f"\n🔍 Testing {model_type} model: {model_name}")
     print("-" * 80)
@@ -140,37 +118,26 @@ def run_benchmark(model_name: str, model_type: str) -> List[Dict]:
     results = []
 
     for prompt_data in tqdm(BENCHMARK_PROMPTS, desc=f"Running {model_type}"):
-        # Extract prompt
         prompt_id = prompt_data["id"]
         prompt_text = prompt_data["prompt"]
-        category = prompt_data["category"]
 
         # Query model
-        result = query_ollama(model_name, prompt_text)
+        response_data = query_ollama(url, model_name, prompt_text)
 
-        # Store result with metadata
-        results.append({
-            # Prompt metadata
+        # Store result
+        result = {
             "prompt_id": prompt_id,
-            "category": category,
             "prompt": prompt_text,
-            "expected_keywords": prompt_data["expected_keywords"],
-
-            # Model response
-            "model": model_name,
-            "model_type": model_type,
-            "response": result["response"],
-
-            # Performance metrics
-            "time_ms": result["time_ms"],
-            "tokens": result["tokens"],
-            "tokens_per_second": result["tokens"] / (result["time_ms"] / 1000) if result["time_ms"] > 0 else 0,
-
-            # Error handling
-            "error": result["error"],
-        })
-
-        # Small delay to avoid overwhelming Ollama
+            "response": response_data["response"],
+            "metadata": {
+                "category": prompt_data["category"],
+                "ground_truth": prompt_data.get("ground_truth"),
+                "keywords": prompt_data.get("keywords"),
+                "latency_seconds": response_data["latency_seconds"],
+                "response_length": response_data["response_length"],
+            }
+        }
+        results.append(result)
         time.sleep(0.1)
 
     return results
@@ -179,94 +146,82 @@ def run_benchmark(model_name: str, model_type: str) -> List[Dict]:
 def save_results(results: List[Dict], output_file: Path):
     """Save benchmark results to JSON file."""
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
     output_path = RESULTS_DIR / output_file
-
-    with open(output_path, 'w') as f:
-        json.dump(results, f, indent=2)
-
+    with open(output_path, 'w', encoding="utf-8") as f:
+        json.dump(results, f, indent=2, ensure_ascii=False)
     print(f"   ✅ Saved to: {output_path}")
 
 
 def print_summary(results: List[Dict], model_type: str):
     """Print quick summary of results."""
     total_prompts = len(results)
-    errors = sum(1 for r in results if r["error"])
-    avg_time = sum(r["time_ms"] for r in results) / total_prompts if total_prompts > 0 else 0
-    avg_tokens = sum(r["tokens"] for r in results) / total_prompts if total_prompts > 0 else 0
+    errors = sum(1 for r in results if r.get("error"))
+    avg_time = sum(r["metadata"]["latency_seconds"] for r in results) / total_prompts if total_prompts > 0 else 0
+    avg_len = sum(r["metadata"]["response_length"] for r in results) / total_prompts if total_prompts > 0 else 0
 
     print(f"\n📊 {model_type.upper()} Summary:")
     print(f"   Total prompts: {total_prompts}")
     print(f"   Successful: {total_prompts - errors}")
     print(f"   Errors: {errors}")
-    print(f"   Avg time: {avg_time:.0f}ms")
-    print(f"   Avg tokens: {avg_tokens:.0f}")
+    print(f"   Avg time: {avg_time:.2f}s")
+    print(f"   Avg length: {avg_len:.0f} chars")
 
 
 # ===== MAIN FUNCTION =====
 
-def main(experiment_name: str):
+def main(args):
     """
     Main benchmark workflow.
-
-    Steps:
-        1. Validate Ollama is running
-        2. Check base model exists
-        3. Check fine-tuned model exists
-        4. Run benchmark on base model
-        5. Run benchmark on fine-tuned model
-        6. Save results
     """
     print("=" * 80)
     print("🚀 Starting Benchmark Suite")
     print("=" * 80)
+    print(f"Base model:       {args.base}")
+    print(f"Fine-tuned model: {args.finetuned}")
+    print(f"Ollama URL:       {args.ollama_url}")
 
     # ===== STEP 1: VALIDATE OLLAMA =====
     print("\n🔧 Checking prerequisites...")
 
-    if not check_ollama_running():
-        print("❌ Error: Ollama is not running!")
+    if not check_ollama_running(args.ollama_url):
+        print(f"❌ Error: Ollama is not running at {args.ollama_url}!")
         print("   Start it with: docker-compose up -d")
         sys.exit(1)
     print("   ✅ Ollama is running")
 
-    # ===== STEP 2: CHECK BASE MODEL =====
-    if not check_model_exists(BASE_MODEL):
-        print(f"❌ Error: Base model '{BASE_MODEL}' not found!")
-        print(f"   Pull it with: docker-compose exec ollama ollama pull {BASE_MODEL}")
+    # ===== STEP 2: CHECK MODELS =====
+    if not check_model_exists(args.ollama_url, args.base):
+        print(f"❌ Error: Base model '{args.base}' not found!")
+        print(f"   Pull it with: ollama pull {args.base}")
         sys.exit(1)
-    print(f"   ✅ Base model '{BASE_MODEL}' available")
+    print(f"   ✅ Base model '{args.base}' available")
 
-    # ===== STEP 3: CHECK FINE-TUNED MODEL =====
-    finetuned_model = experiment_name
-
-    if not check_model_exists(finetuned_model):
-        print(f"❌ Error: Fine-tuned model '{finetuned_model}' not found!")
-        print(f"   Export it with: ./scripts/export_to_ollama.sh {experiment_name}")
+    if not check_model_exists(args.ollama_url, args.finetuned):
+        print(f"❌ Error: Fine-tuned model '{args.finetuned}' not found!")
+        print(f"   Export it from your experiment directory.")
         sys.exit(1)
-    print(f"   ✅ Fine-tuned model '{finetuned_model}' available")
+    print(f"   ✅ Fine-tuned model '{args.finetuned}' available")
 
-    # ===== STEP 4: RUN BENCHMARK ON BASE MODEL =====
-    base_results = run_benchmark(BASE_MODEL, "base")
+    # ===== STEP 3: RUN BENCHMARK ON BASE MODEL =====
+    base_results = run_benchmark_on_model(args.ollama_url, args.base, "base")
     print_summary(base_results, "base")
-    save_results(base_results, "base.json")
+    save_results(base_results, Path("base.json"))
 
-    # ===== STEP 5: RUN BENCHMARK ON FINE-TUNED MODEL =====
-    finetuned_results = run_benchmark(finetuned_model, "finetuned")
+    # ===== STEP 4: RUN BENCHMARK ON FINE-TUNED MODEL =====
+    finetuned_results = run_benchmark_on_model(args.ollama_url, args.finetuned, "finetuned")
     print_summary(finetuned_results, "finetuned")
-    save_results(finetuned_results, "finetuned.json")
+    save_results(finetuned_results, Path("finetuned.json"))
 
     # ===== SUMMARY =====
     print("\n" + "=" * 80)
     print("✅ Benchmark Complete!")
     print("=" * 80)
     print(f"\nResults saved to: {RESULTS_DIR}")
-    print(f"  - base.json: {BASE_MODEL}")
-    print(f"  - finetuned.json: {finetuned_model}")
+    print(f"  - base.json: {args.base}")
+    print(f"  - finetuned.json: {args.finetuned}")
     print(f"\nNext steps:")
     print(f"  1. Calculate deltas: python benchmark/delta.py")
     print(f"  2. Generate report: python benchmark/visualize.py")
-    print(f"  3. View results: open benchmark/results/report.html")
     print("=" * 80)
 
 
@@ -274,38 +229,12 @@ def main(experiment_name: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Run benchmark suite against base and fine-tuned models",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Run benchmark for experiment exp-001
-  python benchmark/run.py exp-001
-
-  # Run benchmark for different experiment
-  python benchmark/run.py chatbot-v2
-
-Prerequisites:
-  1. Ollama must be running: docker-compose up -d
-  2. Base model must be pulled: ollama pull qwen2.5:0.5b
-  3. Fine-tuned model must be exported: ./scripts/export_to_ollama.sh <name>
-
-Output:
-  - benchmark/results/base.json: Base model responses
-  - benchmark/results/finetuned.json: Fine-tuned model responses
-
-Tips:
-  - If queries are slow, check GPU is enabled for Ollama
-  - If model not found, verify with: ollama list
-  - Results are deterministic (temperature controls randomness)
-        """
+        description="Run benchmark suite against base and fine-tuned models.",
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
-
-    parser.add_argument(
-        "experiment_name",
-        help="Name of the experiment (matches fine-tuned model name)"
-    )
-
+    parser.add_argument("--base", default="qwen2.5:0.5b", help="Base model name in Ollama")
+    parser.add_argument("--finetuned", required=True, help="Fine-tuned model name in Ollama")
+    parser.add_argument("--ollama-url", default="http://localhost:11434", help="Ollama API URL")
+    
     args = parser.parse_args()
-
-    # Run benchmark
-    main(args.experiment_name)
+    main(args)
