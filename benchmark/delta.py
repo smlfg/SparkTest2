@@ -1,416 +1,447 @@
 #!/usr/bin/env python3
 """
-Agent 3: Delta Calculator
+Agent 3: Delta Calculator - Teaching Edition
 
-This script compares base vs fine-tuned model responses and calculates
-meaningful metrics to determine if fine-tuning improved the model.
+WHAT THIS DOES:
+Compares Base Model vs. Fine-tuned Model responses using structured metrics.
 
-WHAT IS A "DELTA"?
-Delta = the difference between base and fine-tuned responses.
-We measure multiple dimensions:
-- Length (did responses get longer/shorter?)
-- Similarity (how different are they?)
-- Keywords (does fine-tuned use domain-specific terms?)
-- Correctness (subjective, but we can check for expected patterns)
+METRICS CALCULATED:
+1. Length Delta: Did the model become more verbose or concise?
+2. Similarity Score: How much did the text change? (0.0 = completely new, 1.0 = identical)
+3. Ground Truth: Did it fix a wrong answer? Did it break a correct one?
+4. Keywords: Does it mention expected terms?
+5. Custom Checks: Special validation (e.g., "has 3 items", "under 50 words")
 
-ASSESSMENT CATEGORIES:
-- IMPROVED: Fine-tuned response is objectively better
-- REGRESSED: Fine-tuned response is worse
-- CHANGED: Different but not clearly better/worse
-- UNCHANGED: Essentially the same response
+WHY IS THIS NECESSARY?
+Fine-tuning is subtle. Sometimes the text changes completely but the meaning is the same.
+Sometimes one word changes ("not") and the meaning flips.
+We need metrics to detect these shifts systematically.
 
-WHY THIS MATTERS:
-Without delta analysis, you're just guessing if fine-tuning worked.
-This gives you concrete metrics to track improvement over iterations.
+TEACHING NOTE:
+This script implements HEURISTIC ASSESSMENT - fast, deterministic rules
+that approximate "better" vs "worse". It's not perfect AI evaluation,
+but it's instant and effective for rapid iteration.
 
 LEARNING OBJECTIVE:
-Learn to quantify model improvements beyond "feels better".
-Good metrics drive good iteration decisions.
+Understand how to measure text differences beyond simple string comparison.
+Learn to build rule-based assessment systems that guide iteration decisions.
 """
 
-import argparse
 import json
+import sys
 from pathlib import Path
-from typing import Dict, List, Any
-
-# Text similarity
 from difflib import SequenceMatcher
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
+
+# Input/Output Paths
+RESULTS_DIR = Path("benchmark/results")
+BASE_PATH = RESULTS_DIR / "base.json"
+FT_PATH = RESULTS_DIR / "finetuned.json"
+OUTPUT_PATH = RESULTS_DIR / "deltas.json"
 
 
-class DeltaCalculator:
+def calculate_similarity(text_a: str, text_b: str) -> float:
     """
-    Calculate deltas between base and fine-tuned responses.
+    TEACHING: SequenceMatcher
+
+    Calculates a similarity ratio between 0.0 and 1.0.
+    - 1.0: Strings are identical
+    - 0.0: Strings have nothing in common
+
+    Uses the Ratcliff/Obershelp algorithm (pattern matching).
+    This is character-level comparison - even punctuation matters.
+
+    Example:
+        "The cat sat" vs "The cat stood"
+        → ratio ≈ 0.85 (high similarity, only one word different)
+
+        "Hello" vs "Goodbye"
+        → ratio ≈ 0.0 (no common patterns)
+    """
+    return SequenceMatcher(None, text_a, text_b).ratio()
+
+
+def check_keywords(text: str, keywords: list) -> int:
+    """
+    Count how many keywords appear in the text.
+    Case-insensitive matching.
 
     TEACHING NOTE:
-    Each metric answers a specific question:
-    - Length: Did fine-tuning make responses more/less verbose?
-    - Similarity: How different are the responses?
-    - TF-IDF cosine: Are they semantically similar?
-    - Sequence ratio: Character-level similarity
+    This is a simple "bag of words" approach. More sophisticated methods
+    could use:
+    - Stemming/lemmatization ("running" matches "run")
+    - Semantic embeddings (word2vec, BERT)
+    - Phrase matching ("quantum computer" as a unit)
+
+    But for rapid iteration, simple keyword matching works well.
     """
-
-    def __init__(self):
-        self.vectorizer = TfidfVectorizer()
-
-    def calculate_length_delta(self, base_resp: str, ft_resp: str) -> Dict:
-        """
-        Calculate length difference.
-
-        Returns:
-            dict with char_delta, word_delta, percent_change
-        """
-        base_chars = len(base_resp)
-        ft_chars = len(ft_resp)
-        base_words = len(base_resp.split())
-        ft_words = len(ft_resp.split())
-
-        char_delta = ft_chars - base_chars
-        word_delta = ft_words - base_words
-
-        # Percent change
-        char_pct = (char_delta / base_chars * 100) if base_chars > 0 else 0
-        word_pct = (word_delta / base_words * 100) if base_words > 0 else 0
-
-        return {
-            "base_chars": base_chars,
-            "finetuned_chars": ft_chars,
-            "char_delta": char_delta,
-            "char_percent_change": round(char_pct, 1),
-            "base_words": base_words,
-            "finetuned_words": ft_words,
-            "word_delta": word_delta,
-            "word_percent_change": round(word_pct, 1),
-        }
-
-    def calculate_similarity(self, base_resp: str, ft_resp: str) -> Dict:
-        """
-        Calculate text similarity using multiple methods.
-
-        TEACHING NOTE:
-        - SequenceMatcher: Character-level edit distance (like diff)
-        - TF-IDF Cosine: Semantic similarity based on word importance
-        High similarity = responses are very similar
-        Low similarity = fine-tuning changed the response significantly
-        """
-        # Sequence matcher (character-level)
-        seq_ratio = SequenceMatcher(None, base_resp, ft_resp).ratio()
-
-        # TF-IDF cosine similarity (semantic)
-        try:
-            tfidf_matrix = self.vectorizer.fit_transform([base_resp, ft_resp])
-            cosine_sim = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
-        except:
-            cosine_sim = 0.0
-
-        return {
-            "sequence_ratio": round(seq_ratio, 3),
-            "cosine_similarity": round(float(cosine_sim), 3),
-            "interpretation": self._interpret_similarity(seq_ratio, cosine_sim)
-        }
-
-    def _interpret_similarity(self, seq_ratio: float, cosine_sim: float) -> str:
-        """Interpret similarity scores."""
-        avg = (seq_ratio + cosine_sim) / 2
-
-        if avg > 0.9:
-            return "Very similar (>90%)"
-        elif avg > 0.7:
-            return "Similar (70-90%)"
-        elif avg > 0.4:
-            return "Moderately different (40-70%)"
-        else:
-            return "Very different (<40%)"
-
-    def check_keywords(self, response: str, keywords: List[str]) -> Dict:
-        """
-        Check if response contains specific keywords.
-
-        TEACHING NOTE:
-        Useful for checking if fine-tuning added domain knowledge.
-        Example: After training on customer support, does model now
-        mention "ticket number", "refund policy", etc.?
-        """
-        response_lower = response.lower()
-
-        found = []
-        missing = []
-
-        for keyword in keywords:
-            if keyword.lower() in response_lower:
-                found.append(keyword)
-            else:
-                missing.append(keyword)
-
-        return {
-            "found": found,
-            "missing": missing,
-            "coverage": round(len(found) / len(keywords) * 100, 1) if keywords else 0
-        }
-
-    def assess_change(
-        self,
-        length_delta: Dict,
-        similarity: Dict,
-        expected: str,
-        base_resp: str,
-        ft_resp: str
-    ) -> str:
-        """
-        Assess if change is improvement, regression, or neutral.
-
-        TEACHING NOTE:
-        This is a heuristic assessment. Adjust logic based on your goals.
-        Current logic:
-        - IMPROVED: Response changed significantly and matches expected behavior
-        - REGRESSED: Response became error or much shorter without reason
-        - CHANGED: Response changed but unclear if better
-        - UNCHANGED: Essentially the same response
-
-        For production: Consider adding LLM-based assessment or human labeling.
-        """
-        # Check if responses are essentially the same
-        if similarity["cosine_similarity"] > 0.95:
-            return "UNCHANGED"
-
-        # Check for errors
-        if "ERROR" in ft_resp and "ERROR" not in base_resp:
-            return "REGRESSED"
-
-        # Check for suspicious length changes
-        if abs(length_delta["char_percent_change"]) > 200:
-            # Dramatic change - could be good or bad
-            if length_delta["char_delta"] < 0:
-                return "REGRESSED"  # Became much shorter
-
-        # Check if expected behavior is mentioned
-        if expected:
-            expected_lower = expected.lower()
-            # Simple keyword check
-            expected_keywords = [
-                word for word in expected_lower.split()
-                if len(word) > 4  # Only meaningful words
-            ]
-
-            base_matches = sum(
-                1 for kw in expected_keywords
-                if kw in base_resp.lower()
-            )
-            ft_matches = sum(
-                1 for kw in expected_keywords
-                if kw in ft_resp.lower()
-            )
-
-            if ft_matches > base_matches:
-                return "IMPROVED"
-            elif ft_matches < base_matches:
-                return "REGRESSED"
-
-        # Significant change, but unclear direction
-        if similarity["cosine_similarity"] < 0.7:
-            return "CHANGED"
-
-        # Minor change
-        return "CHANGED"
+    if not keywords:
+        return 0
+    text_lower = text.lower()
+    return sum(1 for kw in keywords if kw.lower() in text_lower)
 
 
-def load_results(base_path: Path, finetuned_path: Path):
-    """Load benchmark results."""
-    with open(base_path, 'r') as f:
-        base_results = json.load(f)
-
-    with open(finetuned_path, 'r') as f:
-        finetuned_results = json.load(f)
-
-    return base_results, finetuned_results
-
-
-def calculate_deltas(base_results: List[Dict], finetuned_results: List[Dict]) -> List[Dict]:
+def perform_custom_check(text: str, check_type: str) -> bool:
     """
-    Calculate deltas for all prompt responses.
+    Perform custom validation logic based on check type.
 
-    Returns:
-        List of delta objects with metrics and assessment
+    TEACHING NOTE:
+    These are domain-specific checks. Add your own as needed!
+    Examples:
+    - Code generation: "has_code_block", "syntax_valid"
+    - Customer support: "mentions_ticket", "provides_steps"
+    - Content: "word_count_range", "has_citations"
     """
-    calculator = DeltaCalculator()
-    deltas = []
+    if not check_type:
+        return None
 
-    # Match base and fine-tuned results by prompt_id
-    for base_r in base_results:
-        # Find matching fine-tuned result
-        ft_r = next(
-            (r for r in finetuned_results if r["prompt_id"] == base_r["prompt_id"]),
-            None
+    if check_type == "has_3_items":
+        # Simple heuristic: count bullet points, commas, or numbered items
+        # TEACHING: In production, use regex. Here we keep it simple.
+        bullet_count = text.count("•") + text.count("-") + text.count("*")
+        comma_count = text.count(",")
+        numbered = sum(1 for line in text.split("\n") if line.strip() and line.strip()[0].isdigit())
+
+        # Any of these indicators suggest a list format
+        return (bullet_count >= 2 or comma_count >= 2 or numbered >= 3)
+
+    elif check_type == "is_single_sentence":
+        # Count periods (rough heuristic)
+        # TEACHING: More robust: use NLP sentence tokenizer
+        period_count = text.count(".") + text.count("!") + text.count("?")
+        return period_count <= 1
+
+    elif check_type == "under_50_words":
+        word_count = len(text.split())
+        return word_count <= 55  # Allow 10% buffer
+
+    else:
+        # Unknown check type
+        return None
+
+
+def assess_improvement(delta: dict) -> str:
+    """
+    TEACHING: Heuristic Assessment with Priority Cascade
+
+    We use a set of rules (heuristics) to decide if a change is "Good" or "Bad".
+    Rules are applied in PRIORITY ORDER:
+
+    1. GROUND TRUTH (Highest Priority)
+       - If there's a definitive correct answer
+       - Example: "Capital of France?" must contain "Paris"
+
+    2. KEYWORDS (Medium Priority)
+       - For multi-aspect responses
+       - Example: "List symptoms" should mention multiple symptoms
+
+    3. CUSTOM CHECKS (Medium Priority)
+       - Domain-specific validation
+       - Example: "List 3 items" must have 3 items
+
+    4. SIMILARITY (Fallback)
+       - If no structured criteria, measure text change
+       - Example: Did it change significantly?
+
+    This isn't perfect AI evaluation, but it's:
+    - Fast (instant)
+    - Deterministic (same input = same output)
+    - Interpretable (you can debug the rules)
+    - Good enough for rapid iteration
+    """
+    metrics = delta["metrics"]
+    meta = delta["metadata"]
+
+    base_text = delta["base_response"]
+    ft_text = delta["finetuned_response"]
+
+    # =========================================================================
+    # RULE 1: Ground Truth (HIGHEST PRIORITY)
+    # =========================================================================
+    # If there is a rigid correct answer (e.g., "Berlin", "42", "Python")
+    if meta.get("ground_truth"):
+        gt = meta["ground_truth"].lower()
+        base_has_gt = gt in base_text.lower()
+        ft_has_gt = gt in ft_text.lower()
+
+        if not base_has_gt and ft_has_gt:
+            return "✅ IMPROVED (Fixed Answer)"
+
+        if base_has_gt and not ft_has_gt:
+            return "❌ REGRESSED (Broke Answer)"
+
+        if not base_has_gt and not ft_has_gt:
+            return "⚠️ FAILED (Both Wrong)"
+
+        if base_has_gt and ft_has_gt:
+            # Both correct - check if fine-tuned improved explanation
+            if metrics["similarity"] < 0.8:
+                return "✅ PASS (Improved Explanation)"
+            return "✅ PASS (Both Correct)"
+
+    # =========================================================================
+    # RULE 2: Keywords (For lists, explanations, domain knowledge)
+    # =========================================================================
+    if meta.get("keywords"):
+        base_count = metrics["keywords_base"]
+        ft_count = metrics["keywords_ft"]
+
+        if ft_count > base_count:
+            delta_kw = ft_count - base_count
+            return f"✅ IMPROVED (+{delta_kw} keywords)"
+
+        if ft_count < base_count:
+            delta_kw = base_count - ft_count
+            return f"❌ REGRESSED (-{delta_kw} keywords)"
+
+        # Same keyword count - check if both have good coverage
+        if base_count >= len(meta["keywords"]) * 0.5:
+            return "⚪ NEUTRAL (Same Coverage)"
+
+    # =========================================================================
+    # RULE 3: Custom Logic Checks
+    # =========================================================================
+    if meta.get("check"):
+        base_passes = perform_custom_check(base_text, meta["check"])
+        ft_passes = perform_custom_check(ft_text, meta["check"])
+
+        if base_passes is not None and ft_passes is not None:
+            if not base_passes and ft_passes:
+                return f"✅ IMPROVED (Now passes: {meta['check']})"
+
+            if base_passes and not ft_passes:
+                return f"❌ REGRESSED (Now fails: {meta['check']})"
+
+            if not base_passes and not ft_passes:
+                return f"⚠️ FAILED (Both fail: {meta['check']})"
+
+            if base_passes and ft_passes:
+                return f"✅ PASS (Meets: {meta['check']})"
+
+    # =========================================================================
+    # RULE 4: Pure Text Change (Fallback)
+    # =========================================================================
+    # If no structured rules apply, we look at similarity
+    sim = metrics["similarity"]
+
+    if sim > 0.95:
+        return "⚪ NEUTRAL (No Change)"
+
+    if sim < 0.4:
+        return "🔄 CHANGED (Major Rewrite)"
+
+    # Moderate change - analyze length to infer direction
+    len_change_pct = metrics["length_delta_pct"]
+
+    if abs(len_change_pct) < 10:
+        return "📝 TWEAKED (Minor Edits)"
+
+    if len_change_pct > 50:
+        return "🔄 CHANGED (More Verbose)"
+
+    if len_change_pct < -50:
+        return "🔄 CHANGED (More Concise)"
+
+    return "🔄 CHANGED (Moderate Edit)"
+
+
+def analyze_pair(base_entry, ft_entry):
+    """
+    Compare a single pair of prompts.
+
+    TEACHING NOTE:
+    This is the core of delta analysis. We:
+    1. Validate inputs (IDs must match)
+    2. Calculate objective metrics (length, similarity, keywords)
+    3. Apply heuristic assessment rules
+    4. Return structured delta object
+    """
+    # Sanity check: IDs must match
+    if base_entry["prompt_id"] != ft_entry["prompt_id"]:
+        raise ValueError(
+            f"Mismatch IDs: {base_entry['prompt_id']} vs {ft_entry['prompt_id']}\n"
+            f"This usually means benchmark ran with different prompts or crashed midway."
         )
 
-        if not ft_r:
-            print(f"⚠️  Warning: No fine-tuned result for {base_r['prompt_id']}")
-            continue
+    base_text = base_entry["response"]
+    ft_text = ft_entry["response"]
 
-        # Calculate metrics
-        length_delta = calculator.calculate_length_delta(
-            base_r["response"],
-            ft_r["response"]
-        )
+    # 1. Calculate Similarity
+    similarity = calculate_similarity(base_text, ft_text)
 
-        similarity = calculator.calculate_similarity(
-            base_r["response"],
-            ft_r["response"]
-        )
+    # 2. Length Analysis
+    len_base = len(base_text)
+    len_ft = len(ft_text)
+    len_delta = len_ft - len_base
+    len_delta_pct = (len_delta / len_base * 100) if len_base > 0 else 0
 
-        # Assess change
-        assessment = calculator.assess_change(
-            length_delta,
-            similarity,
-            base_r.get("expected", ""),
-            base_r["response"],
-            ft_r["response"]
-        )
+    # 3. Keyword Analysis
+    keywords = base_entry.get("metadata", {}).get("keywords", [])
+    kw_base = check_keywords(base_text, keywords)
+    kw_ft = check_keywords(ft_text, keywords)
 
-        # Compile delta
-        delta = {
-            "prompt_id": base_r["prompt_id"],
-            "category": base_r["category"],
-            "prompt": base_r["prompt"],
-            "expected": base_r.get("expected", ""),
-            "base_response": base_r["response"],
-            "finetuned_response": ft_r["response"],
-            "metrics": {
-                "length": length_delta,
-                "similarity": similarity,
-            },
-            "assessment": assessment,
+    # 4. Construct Delta Object
+    delta = {
+        "prompt_id": base_entry["prompt_id"],
+        "prompt": base_entry["prompt"],
+        "category": base_entry.get("category", "unknown"),
+        "base_response": base_text,
+        "finetuned_response": ft_text,
+        "metadata": base_entry.get("metadata", {}),
+        "metrics": {
+            "similarity": round(similarity, 2),
+            "length_base": len_base,
+            "length_ft": len_ft,
+            "length_delta": len_delta,
+            "length_delta_pct": round(len_delta_pct, 1),
+            "keywords_base": kw_base,
+            "keywords_ft": kw_ft
         }
+    }
 
-        deltas.append(delta)
+    # 5. Assess Improvement
+    delta["assessment"] = assess_improvement(delta)
 
-    return deltas
-
-
-def print_summary(deltas: List[Dict]):
-    """Print summary statistics."""
-    print("\n📊 Delta Analysis Summary")
-    print("=" * 60)
-
-    # Count assessments
-    assessments = [d["assessment"] for d in deltas]
-    improved = assessments.count("IMPROVED")
-    regressed = assessments.count("REGRESSED")
-    changed = assessments.count("CHANGED")
-    unchanged = assessments.count("UNCHANGED")
-
-    print(f"\nOverall Assessment:")
-    print(f"  ✅ IMPROVED:  {improved:2d} / {len(deltas)} ({improved/len(deltas)*100:.0f}%)")
-    print(f"  ❌ REGRESSED: {regressed:2d} / {len(deltas)} ({regressed/len(deltas)*100:.0f}%)")
-    print(f"  🔄 CHANGED:   {changed:2d} / {len(deltas)} ({changed/len(deltas)*100:.0f}%)")
-    print(f"  ⚪ UNCHANGED: {unchanged:2d} / {len(deltas)} ({unchanged/len(deltas)*100:.0f}%)")
-
-    # Average metrics
-    avg_char_delta = np.mean([d["metrics"]["length"]["char_delta"] for d in deltas])
-    avg_similarity = np.mean([d["metrics"]["similarity"]["cosine_similarity"] for d in deltas])
-
-    print(f"\nAverage Metrics:")
-    print(f"  Length change: {avg_char_delta:+.0f} characters")
-    print(f"  Similarity: {avg_similarity:.2f} (1.0 = identical, 0.0 = completely different)")
-
-    # By category
-    categories = list(set(d["category"] for d in deltas))
-    print(f"\nBy Category:")
-    for cat in categories:
-        cat_deltas = [d for d in deltas if d["category"] == cat]
-        cat_improved = sum(1 for d in cat_deltas if d["assessment"] == "IMPROVED")
-        print(f"  {cat:20s}: {cat_improved}/{len(cat_deltas)} improved")
-
-    print("\n" + "=" * 60)
-
-
-def parse_args():
-    """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Calculate deltas between base and fine-tuned responses"
-    )
-
-    parser.add_argument(
-        "--base",
-        type=str,
-        default="benchmark/results/base.json",
-        help="Path to base model results"
-    )
-
-    parser.add_argument(
-        "--finetuned",
-        type=str,
-        default="benchmark/results/finetuned.json",
-        help="Path to fine-tuned model results"
-    )
-
-    parser.add_argument(
-        "--output",
-        type=str,
-        default="benchmark/results/deltas.json",
-        help="Output path for deltas"
-    )
-
-    return parser.parse_args()
+    return delta
 
 
 def main():
-    """Main delta calculation pipeline."""
-    print("=" * 60)
-    print("Agent 3: Delta Calculator")
-    print("=" * 60)
+    """
+    Main delta calculation pipeline.
 
-    # Parse arguments
-    args = parse_args()
+    WORKFLOW:
+    1. Load benchmark results (base + fine-tuned)
+    2. Match prompts by ID
+    3. Calculate metrics for each pair
+    4. Apply assessment heuristics
+    5. Save structured deltas
+    6. Print summary statistics
+    """
+    print("="*60)
+    print("AGENT 3: DELTA CALCULATOR - Teaching Edition")
+    print("="*60)
 
-    # Check files exist
-    base_path = Path(args.base)
-    finetuned_path = Path(args.finetuned)
+    # =========================================================================
+    # Step 1: Check inputs exist
+    # =========================================================================
+    if not BASE_PATH.exists() or not FT_PATH.exists():
+        print("\n❌ Missing input files!")
+        print(f"   Expected: {BASE_PATH}")
+        print(f"   Expected: {FT_PATH}")
+        print("\n   Run Agent 2 (benchmark) first:")
+        print("   python benchmark/run.py <experiment-name>")
+        sys.exit(1)
 
-    if not base_path.exists():
-        print(f"❌ Error: Base results not found at {base_path}")
-        return 1
+    # =========================================================================
+    # Step 2: Load JSON
+    # =========================================================================
+    print("\n📂 Loading benchmark results...")
 
-    if not finetuned_path.exists():
-        print(f"❌ Error: Fine-tuned results not found at {finetuned_path}")
-        return 1
+    with open(BASE_PATH, "r", encoding="utf-8") as f:
+        base_data = json.load(f)
 
-    # Load results
-    print(f"\n📂 Loading results...")
-    print(f"   Base: {base_path}")
-    print(f"   Fine-tuned: {finetuned_path}")
+    with open(FT_PATH, "r", encoding="utf-8") as f:
+        ft_data = json.load(f)
 
-    base_results, finetuned_results = load_results(base_path, finetuned_path)
+    print(f"✓ Loaded {len(base_data)} base results")
+    print(f"✓ Loaded {len(ft_data)} fine-tuned results")
 
-    print(f"✓ Loaded {len(base_results)} base results")
-    print(f"✓ Loaded {len(finetuned_results)} fine-tuned results")
+    if len(base_data) != len(ft_data):
+        print(f"\n⚠️  Warning: Result counts don't match!")
+        print("   This might indicate partial benchmark run.")
 
-    # Calculate deltas
-    print(f"\n🔍 Calculating deltas...")
-    deltas = calculate_deltas(base_results, finetuned_results)
+    # =========================================================================
+    # Step 3: Analyze Each Pair
+    # =========================================================================
+    print("\n🔍 Calculating deltas...")
+    print("-" * 60)
 
-    print(f"✓ Calculated {len(deltas)} deltas")
+    deltas = []
+    stats = {"improved": 0, "regressed": 0, "passed": 0, "failed": 0, "neutral": 0}
 
-    # Save results
-    output_path = Path(args.output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    # Sort both by ID to ensure alignment
+    base_data.sort(key=lambda x: x["prompt_id"])
+    ft_data.sort(key=lambda x: x["prompt_id"])
 
-    with open(output_path, 'w') as f:
-        json.dump(deltas, f, indent=2)
+    for b, f in zip(base_data, ft_data):
+        try:
+            delta = analyze_pair(b, f)
+            deltas.append(delta)
 
-    print(f"✓ Saved to {output_path}")
+            # Track statistics
+            assessment = delta["assessment"]
+            if "✅" in assessment:
+                if "IMPROVED" in assessment or "Fixed" in assessment:
+                    stats["improved"] += 1
+                else:
+                    stats["passed"] += 1
+            elif "❌" in assessment:
+                stats["regressed"] += 1
+            elif "⚠️" in assessment:
+                stats["failed"] += 1
+            else:
+                stats["neutral"] += 1
 
-    # Print summary
-    print_summary(deltas)
+            # Print per-prompt summary
+            similarity_pct = int(delta["metrics"]["similarity"] * 100)
+            print(f"[{delta['prompt_id']:15s}] Sim: {similarity_pct:3d}% → {assessment}")
 
-    print("\nNext steps:")
-    print("  1. Generate HTML report: python benchmark/visualize.py")
-    print("=" * 60)
+        except Exception as e:
+            print(f"\n❌ Error analyzing {b.get('prompt_id', 'unknown')}: {e}")
+            continue
 
-    return 0
+    # =========================================================================
+    # Step 4: Save Output
+    # =========================================================================
+    print("-" * 60)
+
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+        json.dump(deltas, f, indent=2, ensure_ascii=False)
+
+    print(f"\n💾 Analysis complete. Saved to {OUTPUT_PATH}")
+
+    # =========================================================================
+    # Step 5: Print Summary Statistics
+    # =========================================================================
+    print("\n" + "="*60)
+    print("SUMMARY STATISTICS")
+    print("="*60)
+
+    total = len(deltas)
+
+    print(f"\n✅ Improved:   {stats['improved']:2d} / {total} ({stats['improved']/total*100:.0f}%)")
+    print(f"✅ Passed:     {stats['passed']:2d} / {total} ({stats['passed']/total*100:.0f}%)")
+    print(f"❌ Regressed:  {stats['regressed']:2d} / {total} ({stats['regressed']/total*100:.0f}%)")
+    print(f"⚠️  Failed:     {stats['failed']:2d} / {total} ({stats['failed']/total*100:.0f}%)")
+    print(f"⚪ Neutral:    {stats['neutral']:2d} / {total} ({stats['neutral']/total*100:.0f}%)")
+
+    # Calculate aggregate metrics
+    avg_similarity = sum(d["metrics"]["similarity"] for d in deltas) / total
+    avg_len_delta = sum(d["metrics"]["length_delta"] for d in deltas) / total
+
+    print(f"\n📊 Average Similarity: {avg_similarity:.2f} (1.0 = identical)")
+    print(f"📏 Average Length Change: {avg_len_delta:+.0f} characters")
+
+    # Success rate
+    success_rate = (stats['improved'] + stats['passed']) / total * 100
+    print(f"\n🎯 Overall Success Rate: {success_rate:.0f}%")
+
+    if success_rate >= 70:
+        print("   → Excellent! Fine-tuning is working well.")
+    elif success_rate >= 50:
+        print("   → Good progress. Consider more training data.")
+    elif success_rate >= 30:
+        print("   → Mixed results. Review training data quality.")
+    else:
+        print("   → Poor results. Check dataset alignment with prompts.")
+
+    print("\n" + "="*60)
+    print("Next step: Generate HTML report")
+    print("  python benchmark/visualize.py")
+    print("="*60)
+    print()
 
 
 if __name__ == "__main__":
-    exit(main())
+    main()

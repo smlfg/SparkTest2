@@ -28,73 +28,126 @@ Good benchmarks test if your model improved on YOUR specific task,
 not general capabilities. Tailor these prompts to match your training data.
 """
 
-# Standard benchmark prompts
+# Standard benchmark prompts (Teaching Edition)
 # Each prompt is a dict with:
 #   - id: unique identifier
 #   - category: type of task
 #   - prompt: the actual test input
-#   - expected: optional description of desired behavior
+#   - metadata: structured evaluation criteria
+#       - ground_truth: exact answer that must appear (highest priority)
+#       - keywords: list of terms that should be mentioned
+#       - check: custom validation logic
 
 BENCHMARK_PROMPTS = [
     {
         "id": "factual_01",
         "category": "factual_qa",
         "prompt": "What is the capital of France?",
-        "expected": "Should answer 'Paris' concisely"
+        "metadata": {
+            "category": "factual_qa",
+            "ground_truth": "Paris",  # Exact answer - HIGHEST PRIORITY
+            "keywords": [],
+            "check": None
+        }
     },
     {
         "id": "factual_02",
         "category": "factual_qa",
         "prompt": "Who wrote 'Romeo and Juliet'?",
-        "expected": "Should answer 'William Shakespeare'"
+        "metadata": {
+            "category": "factual_qa",
+            "ground_truth": "Shakespeare",  # Partial match OK
+            "keywords": ["William", "Shakespeare"],
+            "check": None
+        }
     },
     {
         "id": "reasoning_01",
         "category": "reasoning",
         "prompt": "If all roses are flowers and some flowers fade quickly, can we conclude that some roses fade quickly?",
-        "expected": "Should correctly identify this as invalid logical inference"
+        "metadata": {
+            "category": "reasoning",
+            "ground_truth": None,
+            "keywords": ["cannot conclude", "invalid", "not necessarily", "no", "false"],
+            "check": None
+        }
     },
     {
         "id": "reasoning_02",
         "category": "reasoning",
         "prompt": "A farmer has 17 sheep and all but 9 die. How many are left?",
-        "expected": "Should answer 9 (not 8)"
+        "metadata": {
+            "category": "reasoning",
+            "ground_truth": "9",  # Must contain the number 9
+            "keywords": [],
+            "check": None
+        }
     },
     {
         "id": "creative_01",
         "category": "creative",
         "prompt": "Write a one-sentence story about a robot learning to paint.",
-        "expected": "Should generate creative, coherent sentence"
+        "metadata": {
+            "category": "creative",
+            "ground_truth": None,
+            "keywords": ["robot", "paint"],
+            "check": "is_single_sentence"
+        }
     },
     {
         "id": "creative_02",
         "category": "creative",
         "prompt": "Describe the color blue to someone who has never seen it.",
-        "expected": "Should use metaphors and analogies"
+        "metadata": {
+            "category": "creative",
+            "ground_truth": None,
+            "keywords": ["like", "sky", "ocean", "water", "calm", "cool"],
+            "check": None
+        }
     },
     {
         "id": "instruction_01",
         "category": "instruction_following",
         "prompt": "List three benefits of exercise. Use exactly three bullet points.",
-        "expected": "Should follow format with exactly 3 bullet points"
+        "metadata": {
+            "category": "instruction_following",
+            "ground_truth": None,
+            "keywords": ["health", "exercise", "benefit", "fitness"],
+            "check": "has_3_items"  # Special check for list format
+        }
     },
     {
         "id": "instruction_02",
         "category": "instruction_following",
         "prompt": "Explain quantum computing in simple terms. Limit your response to 50 words.",
-        "expected": "Should be concise and approximately 50 words"
+        "metadata": {
+            "category": "instruction_following",
+            "ground_truth": None,
+            "keywords": ["quantum", "qubit", "superposition", "computer"],
+            "check": "under_50_words"
+        }
     },
     {
         "id": "summarization_01",
         "category": "summarization",
         "prompt": "Summarize this in one sentence: 'Machine learning is a subset of artificial intelligence that enables computers to learn from data without being explicitly programmed. It uses algorithms to identify patterns and make decisions.'",
-        "expected": "Should capture key concept in one sentence"
+        "metadata": {
+            "category": "summarization",
+            "ground_truth": None,
+            "keywords": ["machine learning", "learn", "data", "algorithm"],
+            "check": "is_single_sentence"
+        }
     },
     {
         "id": "open_ended_01",
         "category": "open_ended",
         "prompt": "What's the most important thing someone should know about learning a new skill?",
-        "expected": "Should give thoughtful, helpful advice"
+        "metadata": {
+            "category": "open_ended",
+            "ground_truth": None,
+            "keywords": ["practice", "patience", "consistent", "time", "effort"],
+            "check": None
+        }
     },
 ]
 
