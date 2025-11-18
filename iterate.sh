@@ -65,9 +65,13 @@ START_TIME=$(date +%s)
 ################################################################################
 
 usage() {
-    echo -e "${BLUE}Usage: $0 <experiment-name> <dataset-path>${NC}"
+    echo -e "${BLUE}Usage: $0 <experiment-name> [dataset-path]${NC}"
     echo ""
-    echo "Example:"
+    echo "Examples:"
+    echo -e "  ${CYAN}# Interactive dataset selection:${NC}"
+    echo "  $0 exp-001"
+    echo ""
+    echo -e "  ${CYAN}# Direct dataset path:${NC}"
     echo "  $0 exp-001 datasets/example-chatbot.json"
     echo ""
     echo "This will:"
@@ -82,12 +86,95 @@ usage() {
     exit 1
 }
 
-if [ $# -ne 2 ]; then
+if [ $# -lt 1 ] || [ $# -gt 2 ]; then
     usage
 fi
 
 EXPERIMENT_NAME="$1"
-DATASET_PATH="$2"
+
+################################################################################
+# Interactive Dataset Selection
+################################################################################
+
+if [ $# -eq 1 ]; then
+    # No dataset provided - show interactive selection
+
+    echo -e "${CYAN}================================${NC}"
+    echo -e "${CYAN}📂 Dataset Selection${NC}"
+    echo -e "${CYAN}================================${NC}"
+    echo ""
+
+    # Find all JSON files in datasets/
+    DATASETS=(datasets/*.json)
+
+    # Check if any datasets exist
+    if [ ! -e "${DATASETS[0]}" ]; then
+        echo -e "${RED}❌ Error: No datasets found in datasets/ directory${NC}"
+        echo ""
+        echo "Create a dataset first. Example:"
+        echo -e "${CYAN}cat > datasets/my-dataset.json << 'EOF'"
+        echo '[
+  {
+    "messages": [
+      {"role": "user", "content": "Hello!"},
+      {"role": "assistant", "content": "Hi there!"}
+    ]
+  }
+]
+EOF${NC}"
+        exit 1
+    fi
+
+    # Display available datasets with preview
+    echo -e "${YELLOW}Available datasets:${NC}"
+    echo ""
+
+    idx=1
+    declare -A DATASET_MAP
+    for dataset in "${DATASETS[@]}"; do
+        DATASET_MAP[$idx]="$dataset"
+
+        # Get number of examples
+        NUM_EXAMPLES=$(python3 -c "import json; data=json.load(open('$dataset')); print(len(data))" 2>/dev/null || echo "?")
+
+        # Get file size
+        SIZE=$(du -h "$dataset" | cut -f1)
+
+        # Show dataset info
+        echo -e "  ${GREEN}[$idx]${NC} $(basename $dataset)"
+        echo -e "      📊 Examples: ${NUM_EXAMPLES}  |  💾 Size: ${SIZE}"
+
+        # Show first user message as preview
+        PREVIEW=$(python3 -c "import json; data=json.load(open('$dataset')); print(data[0]['messages'][0]['content'][:60] + ('...' if len(data[0]['messages'][0]['content']) > 60 else ''))" 2>/dev/null || echo "")
+        if [ -n "$PREVIEW" ]; then
+            echo -e "      ${CYAN}Preview: \"${PREVIEW}\"${NC}"
+        fi
+        echo ""
+
+        idx=$((idx + 1))
+    done
+
+    # Prompt user for selection
+    echo -e "${YELLOW}Select dataset [1-$((idx-1))]:${NC} "
+    read -r SELECTION
+
+    # Validate selection
+    if ! [[ "$SELECTION" =~ ^[0-9]+$ ]] || [ "$SELECTION" -lt 1 ] || [ "$SELECTION" -ge $idx ]; then
+        echo -e "${RED}❌ Invalid selection: $SELECTION${NC}"
+        exit 1
+    fi
+
+    # Get selected dataset
+    DATASET_PATH="${DATASET_MAP[$SELECTION]}"
+
+    echo ""
+    echo -e "${GREEN}✓ Selected: $(basename $DATASET_PATH)${NC}"
+    echo ""
+
+else
+    # Dataset path provided as argument
+    DATASET_PATH="$2"
+fi
 
 # Paths
 EXPERIMENT_DIR="experiments/${EXPERIMENT_NAME}"

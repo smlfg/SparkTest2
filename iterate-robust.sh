@@ -263,10 +263,14 @@ fi
 ################################################################################
 
 usage() {
-    echo -e "${BLUE}Usage: $0 <experiment-name> <dataset-path>${NC}"
+    echo -e "${BLUE}Usage: $0 <experiment-name> [dataset-path]${NC}"
     echo ""
-    echo "Example:"
-    echo -e "  ${CYAN}$0 exp-001 datasets/example-chatbot.json${NC}"
+    echo "Examples:"
+    echo -e "  ${CYAN}# Interactive dataset selection:${NC}"
+    echo "  $0 exp-001"
+    echo ""
+    echo -e "  ${CYAN}# Direct dataset path:${NC}"
+    echo "  $0 exp-001 datasets/example-chatbot.json"
     echo ""
     echo "This will:"
     echo "  1. Train model with Unsloth (~3-5 min)"
@@ -280,13 +284,12 @@ usage() {
     exit 1
 }
 
-if [ $# -ne 2 ]; then
+if [ $# -lt 1 ] || [ $# -gt 2 ]; then
     echo -e "${RED}❌ Error: Wrong number of arguments${NC}"
     usage
 fi
 
 EXPERIMENT_NAME="$1"
-DATASET_PATH="$2"
 
 # Validate experiment name (no special characters)
 if ! [[ "$EXPERIMENT_NAME" =~ ^[a-zA-Z0-9_-]+$ ]]; then
@@ -296,17 +299,105 @@ if ! [[ "$EXPERIMENT_NAME" =~ ^[a-zA-Z0-9_-]+$ ]]; then
     exit 1
 fi
 
-# Check if dataset file exists
-if [ ! -f "$DATASET_PATH" ]; then
-    echo -e "${RED}❌ Error: Dataset not found: $DATASET_PATH${NC}"
-    echo -e "${YELLOW}Available datasets:${NC}"
-    if [ -d "datasets" ]; then
-        ls -1 datasets/*.json 2>/dev/null || echo "  (No datasets found in datasets/)"
+################################################################################
+# Interactive Dataset Selection
+################################################################################
+
+if [ $# -eq 1 ]; then
+    # No dataset provided - show interactive selection
+
+    echo ""
+    echo -e "${CYAN}================================${NC}"
+    echo -e "${CYAN}📂 Dataset Selection${NC}"
+    echo -e "${CYAN}================================${NC}"
+    echo ""
+
+    # Find all JSON files in datasets/
+    # Temporarily disable set -u for array expansion
+    set +u
+    DATASETS=(datasets/*.json)
+    set -u
+
+    # Check if any datasets exist
+    if [ ! -e "${DATASETS[0]}" ]; then
+        echo -e "${RED}❌ Error: No datasets found in datasets/ directory${NC}"
+        echo ""
+        echo "Create a dataset first. Example:"
+        echo -e "${CYAN}cat > datasets/my-dataset.json << 'EOF'"
+        echo '[
+  {
+    "messages": [
+      {"role": "user", "content": "Hello!"},
+      {"role": "assistant", "content": "Hi there!"}
+    ]
+  }
+]
+EOF${NC}"
+        exit 1
     fi
-    exit 1
+
+    # Display available datasets with preview
+    echo -e "${YELLOW}Available datasets:${NC}"
+    echo ""
+
+    idx=1
+    declare -A DATASET_MAP
+    for dataset in "${DATASETS[@]}"; do
+        DATASET_MAP[$idx]="$dataset"
+
+        # Get number of examples
+        NUM_EXAMPLES=$($PYTHON_CMD -c "import json; data=json.load(open('$dataset')); print(len(data))" 2>/dev/null || echo "?")
+
+        # Get file size
+        SIZE=$(du -h "$dataset" | cut -f1)
+
+        # Show dataset info
+        echo -e "  ${GREEN}[$idx]${NC} $(basename $dataset)"
+        echo -e "      📊 Examples: ${NUM_EXAMPLES}  |  💾 Size: ${SIZE}"
+
+        # Show first user message as preview
+        PREVIEW=$($PYTHON_CMD -c "import json; data=json.load(open('$dataset')); print(data[0]['messages'][0]['content'][:60] + ('...' if len(data[0]['messages'][0]['content']) > 60 else ''))" 2>/dev/null || echo "")
+        if [ -n "$PREVIEW" ]; then
+            echo -e "      ${CYAN}Preview: \"${PREVIEW}\"${NC}"
+        fi
+        echo ""
+
+        idx=$((idx + 1))
+    done
+
+    # Prompt user for selection
+    echo -e "${YELLOW}Select dataset [1-$((idx-1))]:${NC} "
+    read -r SELECTION
+
+    # Validate selection
+    if ! [[ "$SELECTION" =~ ^[0-9]+$ ]] || [ "$SELECTION" -lt 1 ] || [ "$SELECTION" -ge $idx ]; then
+        echo -e "${RED}❌ Invalid selection: $SELECTION${NC}"
+        exit 1
+    fi
+
+    # Get selected dataset
+    DATASET_PATH="${DATASET_MAP[$SELECTION]}"
+
+    echo ""
+    echo -e "${GREEN}✓ Selected: $(basename $DATASET_PATH)${NC}"
+    echo ""
+
+else
+    # Dataset path provided as argument
+    DATASET_PATH="$2"
+
+    # Check if dataset file exists
+    if [ ! -f "$DATASET_PATH" ]; then
+        echo -e "${RED}❌ Error: Dataset not found: $DATASET_PATH${NC}"
+        echo -e "${YELLOW}Available datasets:${NC}"
+        if [ -d "datasets" ]; then
+            ls -1 datasets/*.json 2>/dev/null || echo "  (No datasets found in datasets/)"
+        fi
+        exit 1
+    fi
 fi
 
-# Check if dataset is valid JSON
+# Validate dataset is valid JSON
 if ! $PYTHON_CMD -c "import json; json.load(open('$DATASET_PATH'))" &> /dev/null; then
     echo -e "${RED}❌ Error: Invalid JSON in dataset: $DATASET_PATH${NC}"
     exit 1
