@@ -200,43 +200,76 @@ def create_prompt_id_map(results: list) -> dict:
     return id_map
 
 def main():
-    print("="*60)
-    print("DELTA CALCULATOR")
-    print("="*60)
+    print("\n" + "="*70)
+    print("  AGENT 3: DELTA CALCULATOR (Comparing Base vs Fine-Tuned)")
+    print("="*70)
+    print()
+    print("📚 WHAT THIS DOES:")
+    print("   This script compares the base model's responses with the")
+    print("   fine-tuned model's responses to see what changed.")
+    print()
+    print("📊 METRICS WE CALCULATE:")
+    print("   • Similarity: How similar are the responses? (0-100%)")
+    print("   • Length Delta: Did the response get longer or shorter?")
+    print("   • Keywords: Technical terms that indicate detail level")
+    print()
+    print("-" * 70)
 
     # 1. Load both result sets
+    print("\n🔍 STEP 1: Loading benchmark results...")
+    print("   Reading: benchmark/results/base.json")
+    print("   Reading: benchmark/results/finetuned.json")
+
     base_data = load_benchmark_results(BASE_PATH)
     ft_data = load_benchmark_results(FINETUNED_PATH)
 
     base_results = base_data.get('results', [])
     ft_results = ft_data.get('results', [])
 
-    print(f"Loaded {len(base_results)} base results")
-    print(f"Loaded {len(ft_results)} finetuned results")
+    print(f"   ✓ Loaded {len(base_results)} base model responses")
+    print(f"   ✓ Loaded {len(ft_results)} fine-tuned model responses")
 
     # ROBUSTNESS CHECK: Can we proceed?
     if not base_results and not ft_results:
-        print("❌ No data to compare!")
-        print("   Creating empty deltas.json...")
+        print("\n⚠️  No data to compare!")
+        print("   Creating empty deltas.json (Agent 4 will show 'No data' message)...")
         with open(DELTA_PATH, "w", encoding="utf-8") as f:
             json.dump([], f, indent=2)
-        print(f"✅ Empty deltas saved to: {DELTA_PATH}")
-        print("   (Agent 4 will show 'No data' message)")
+        print(f"   ✓ Empty deltas saved to: {DELTA_PATH}")
         return
 
     # 2. Create ID-based maps for matching
-    print("\n" + "="*60)
-    print("MATCHING BY PROMPT ID (not index)")
-    print("="*60)
+    print("\n🔗 STEP 2: Matching prompts by ID...")
+    print()
+    print("   💡 WHY ID-BASED MATCHING?")
+    print("   Traditional approach: Match by array index (base[0] vs finetuned[0])")
+    print("   Problem: Breaks if arrays have different lengths or orders!")
+    print()
+    print("   Our approach: Match by prompt_id (like a database JOIN)")
+    print("   Benefits:")
+    print("     ✓ Handles missing prompts gracefully")
+    print("     ✓ Works even if prompts are in different order")
+    print("     ✓ No crashes from IndexError")
+    print()
 
     base_map = create_prompt_id_map(base_results)
     ft_map = create_prompt_id_map(ft_results)
 
     # Find all unique prompt IDs from both sets
     all_ids = set(base_map.keys()) | set(ft_map.keys())
-    print(f"Found {len(all_ids)} unique prompt IDs across both sets")
+    print(f"   Found {len(all_ids)} unique prompt IDs across both datasets")
 
     # 3. Calculate deltas for each prompt
+    print(f"\n📈 STEP 3: Calculating deltas for each prompt...")
+    print()
+    print("   For each prompt, we calculate:")
+    print("   1. Similarity (using SequenceMatcher algorithm)")
+    print("   2. Length change (% increase or decrease)")
+    print("   3. Keyword count (technical terms)")
+    print("   4. Overall assessment (Improved/Regressed/Changed)")
+    print()
+    print("-" * 70)
+
     deltas = []
     matched_count = 0
     missing_base = 0
@@ -248,12 +281,12 @@ def main():
 
         # ROBUSTNESS: Handle missing data
         if not base_result:
-            print(f"⚠️  {prompt_id}: Missing in base results (skipping)")
+            print(f"   ⚠️  {prompt_id}: Missing in base results (skipping)")
             missing_base += 1
             continue
 
         if not ft_result:
-            print(f"⚠️  {prompt_id}: Missing in finetuned results (skipping)")
+            print(f"   ⚠️  {prompt_id}: Missing in finetuned results (skipping)")
             missing_ft += 1
             continue
 
@@ -266,10 +299,16 @@ def main():
         ft_response = ft_result.get('response', '')
 
         # Calculate metrics
+        print(f"\n   Analyzing: {prompt_id}")
         similarity = calculate_similarity(base_response, ft_response)
+        print(f"     • Similarity: {similarity*100:.1f}% (how similar the responses are)")
+
         len_delta_pct = calculate_length_delta(len(base_response), len(ft_response))
+        print(f"     • Length: {len(base_response)} → {len(ft_response)} chars ({len_delta_pct:+.1f}%)")
+
         kw_base = count_keywords(base_response)
         kw_ft = count_keywords(ft_response)
+        print(f"     • Keywords: {kw_base} → {kw_ft} (technical terms found)")
 
         metrics = {
             'similarity': similarity,
@@ -280,6 +319,7 @@ def main():
 
         # Assess the change
         assessment = assess_change(base_response, ft_response, metrics)
+        print(f"     → Assessment: {assessment}")
 
         # Build delta entry
         delta = {
@@ -295,24 +335,45 @@ def main():
         deltas.append(delta)
 
     # 4. Report statistics
-    print("\n" + "="*60)
-    print("MATCHING STATISTICS")
-    print("="*60)
-    print(f"✅ Successfully matched: {matched_count}")
+    print("\n" + "="*70)
+    print("  SUMMARY")
+    print("="*70)
+    print()
+    print(f"   📊 Matching Statistics:")
+    print(f"      • Total unique prompts: {len(all_ids)}")
+    print(f"      • Successfully matched: {matched_count} ✓")
     if missing_base > 0:
-        print(f"⚠️  Missing in base: {missing_base}")
+        print(f"      • Missing in base: {missing_base} ⚠")
     if missing_ft > 0:
-        print(f"⚠️  Missing in finetuned: {missing_ft}")
+        print(f"      • Missing in finetuned: {missing_ft} ⚠")
+    print()
+
+    # Count assessments
+    improved = sum(1 for d in deltas if "✅" in d['assessment'])
+    regressed = sum(1 for d in deltas if "❌" in d['assessment'])
+    changed = sum(1 for d in deltas if "⚠️" in d['assessment'])
+    neutral = sum(1 for d in deltas if "⚪" in d['assessment'])
+
+    print(f"   🎯 Assessment Breakdown:")
+    print(f"      • ✅ Improved: {improved}")
+    print(f"      • ❌ Regressed: {regressed}")
+    print(f"      • ⚠️  Changed: {changed}")
+    print(f"      • ⚪ Neutral: {neutral}")
+    print()
 
     # 5. Save deltas
+    print("💾 Saving results...")
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     with open(DELTA_PATH, "w", encoding="utf-8") as f:
         json.dump(deltas, f, indent=2, ensure_ascii=False)
 
-    print("\n" + "="*60)
-    print(f"✅ Deltas saved to: {DELTA_PATH}")
-    print("   Ready for Agent 4 (visualization)")
-    print("="*60)
+    print(f"   ✓ Deltas saved to: benchmark/results/deltas.json")
+    print()
+    print("="*70)
+    print("  ✅ DELTA CALCULATION COMPLETE")
+    print("     Next: Run 'python3 benchmark/visualize.py' to see HTML report")
+    print("="*70)
+    print()
 
 if __name__ == "__main__":
     main()

@@ -304,18 +304,33 @@ def create_empty_data_message() -> str:
     """
 
 def main():
-    print("="*60)
-    print("HTML VISUALIZER")
-    print("="*60)
+    print("\n" + "="*70)
+    print("  AGENT 4: HTML VISUALIZER (Creating Web Report)")
+    print("="*70)
+    print()
+    print("📚 WHAT THIS DOES:")
+    print("   Transforms the delta analysis (JSON) into a beautiful")
+    print("   HTML report that you can open in your web browser.")
+    print()
+    print("🎨 REPORT FEATURES:")
+    print("   • Color-coded cards (green=improved, red=regressed)")
+    print("   • Side-by-side response comparison")
+    print("   • Summary dashboard with statistics")
+    print("   • Self-contained (no external dependencies)")
+    print()
+    print("-" * 70)
 
     # ROBUSTNESS: We ALWAYS create a report, even if data is missing
     deltas = []
     error_message = None
 
     # 1. Try to load input
+    print("\n🔍 STEP 1: Loading delta analysis...")
+    print("   Reading: benchmark/results/deltas.json")
+
     if not DELTA_PATH.exists():
-        print(f"⚠️  Input file not found: {DELTA_PATH}")
-        print("   Creating report with 'No Data' message...")
+        print(f"   ⚠️  File not found")
+        print("   Will create report with 'No Data' message...")
         error_message = "deltas.json not found"
     else:
         # 2. Try to load JSON
@@ -323,27 +338,38 @@ def main():
             with open(DELTA_PATH, "r", encoding="utf-8") as f:
                 deltas = json.load(f)
 
-            print(f"✅ Loaded {len(deltas)} delta entries.")
+            print(f"   ✓ Loaded {len(deltas)} delta entries")
 
             # Validate it's a list
             if not isinstance(deltas, list):
-                print(f"⚠️  deltas.json is not a list (got {type(deltas).__name__})")
-                print("   Creating report with 'No Data' message...")
+                print(f"   ⚠️  Invalid format (expected list, got {type(deltas).__name__})")
+                print("   Will create report with 'No Data' message...")
                 deltas = []
                 error_message = "deltas.json has invalid format"
 
         except json.JSONDecodeError as e:
-            print(f"⚠️  JSON decode error in {DELTA_PATH}: {e}")
-            print("   Creating report with 'No Data' message...")
+            print(f"   ⚠️  JSON parse error: {e}")
+            print("   Will create report with 'No Data' message...")
             deltas = []
             error_message = f"JSON decode error: {e}"
         except Exception as e:
-            print(f"⚠️  Error reading {DELTA_PATH}: {e}")
-            print("   Creating report with 'No Data' message...")
+            print(f"   ⚠️  Unexpected error: {e}")
+            print("   Will create report with 'No Data' message...")
             deltas = []
             error_message = f"Error: {e}"
 
     # 3. Build HTML content
+    print("\n🎨 STEP 2: Building HTML report...")
+    print()
+    print("   💡 HOW HTML GENERATION WORKS:")
+    print("   We use Python f-strings to inject data into HTML templates.")
+    print("   All user data is HTML-escaped to prevent XSS attacks.")
+    print()
+    print("   Process:")
+    print("   1. Build HTML as list of strings (fast)")
+    print("   2. Join all parts at the end (efficient)")
+    print("   3. Write to file")
+    print()
 
     # TEACHING: We build the HTML as a list of strings
     # and then .join() them at the end.
@@ -360,6 +386,7 @@ def main():
 
     # ROBUSTNESS: Handle empty data gracefully
     if not deltas:
+        print("   Creating 'No Data' message...")
         html_parts.append(create_empty_data_message())
         if error_message:
             html_parts.append(f"<p style='color: #999; text-align: center; font-size: 0.9em;'>Error details: {escape_html(error_message)}</p>")
@@ -372,35 +399,53 @@ def main():
             elif "❌" in assessment: stats["regressed"] += 1
             else: stats["neutral"] += 1
 
+        print(f"   Creating summary: {stats['improved']} improved, {stats['regressed']} regressed, {stats['neutral']} other")
+
         # Add summary
         html_parts.append(create_summary_html(stats))
 
         html_parts.append("<h2>Prompt-by-Prompt Analysis</h2>")
 
         # Add each prompt card
+        print(f"   Generating {len(deltas)} prompt cards...")
+        cards_created = 0
         for delta in deltas:
             try:
                 html_parts.append(create_prompt_card_html(delta))
+                cards_created += 1
             except Exception as e:
                 # ROBUSTNESS: If one card fails, don't crash the entire report
-                print(f"⚠️  Error creating card for {delta.get('prompt_id', 'unknown')}: {e}")
+                print(f"   ⚠️  Error creating card for {delta.get('prompt_id', 'unknown')}: {e}")
                 html_parts.append(f"<p style='color: red;'>Error rendering prompt card: {escape_html(str(e))}</p>")
+
+        print(f"   ✓ Created {cards_created} cards successfully")
 
     # Add footer
     html_parts.append(f"<footer>Report generated by Agent 4.</footer>")
     html_parts.append(HTML_TEMPLATE_FOOTER)
 
     # 4. Write to file (ensure directory exists)
+    print("\n💾 STEP 3: Saving HTML report...")
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     final_html = "\n".join(html_parts)
+    file_size = len(final_html)
     with open(REPORT_PATH, "w", encoding="utf-8") as f:
         f.write(final_html)
 
-    print(f"✅ Report saved to: {REPORT_PATH}")
-    print("   Open this file in your browser to see the results.")
+    print(f"   ✓ Saved: benchmark/results/report.html ({file_size:,} bytes)")
+    print()
+    print("="*70)
+    print("  ✅ HTML REPORT GENERATED")
+    print()
+    print("  📖 To view the report:")
     if not deltas:
-        print("   (Report shows 'No Data' message - this is expected)")
-    print("="*60)
+        print("     Report shows 'No Data' message (run Agent 2 & 3 first)")
+    else:
+        print("     open benchmark/results/report.html     # macOS")
+        print("     xdg-open benchmark/results/report.html  # Linux")
+        print("     start benchmark/results/report.html     # Windows")
+    print("="*70)
+    print()
 
 if __name__ == "__main__":
     main()
