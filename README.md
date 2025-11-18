@@ -11,7 +11,40 @@ Our System:              3 min train, automated benchmarks, objective deltas
 
 ---
 
-## 📋 Quick Start (5 Minutes)
+## ⚡ Quick Setup (Automated)
+
+**For beginners**: Use the automated setup script!
+
+```bash
+# Clone repository
+git clone https://github.com/smlfg/SparkTest2.git
+cd SparkTest2
+
+# Run setup script
+chmod +x setup.sh
+./setup.sh
+```
+
+The setup script will:
+1. ✅ Check prerequisites (GPU, Docker, Python)
+2. ✅ Create virtual environment
+3. ✅ Install dependencies
+4. ✅ Start Ollama (if docker-compose.yml exists)
+5. ✅ Pull base model (qwen2.5:0.5b)
+6. ✅ Verify everything works
+
+**Estimated time**: 5-10 minutes (includes 500MB download)
+
+After setup completes, activate the environment and you're ready:
+```bash
+source venv/bin/activate
+```
+
+---
+
+## 📋 Manual Setup (Step-by-Step)
+
+**If you prefer to understand each step**, follow this guide:
 
 ### Prerequisites
 
