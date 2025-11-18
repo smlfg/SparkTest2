@@ -45,6 +45,20 @@ DATASETS = {
         "converter": "stackoverflow_to_chat",
         "description": "StackOverflow questions and answers",
     },
+    "tiny-codes": {
+        "hf_path": "nampdn-ai/tiny-codes",
+        "hf_config": None,
+        "split": "train",
+        "converter": "tiny_codes_to_chat",
+        "description": "Small code snippets with explanations",
+    },
+    "codeparrot": {
+        "hf_path": "codeparrot/codeparrot-clean-train",
+        "hf_config": None,
+        "split": "train",
+        "converter": "codeparrot_to_chat",
+        "description": "Clean Python code examples",
+    },
 }
 
 ################################################################################
@@ -119,6 +133,109 @@ def stackoverflow_to_chat(example):
             {
                 "role": "assistant",
                 "content": answer.strip()
+            }
+        ]
+    }
+
+
+def tiny_codes_to_chat(example):
+    """
+    Convert tiny-codes to chat format.
+
+    This dataset contains small code snippets with prompts/instructions.
+    Handles multiple possible field names: prompt/instruction and response/output/code.
+
+    User: [prompt/instruction]
+    Assistant: [code/response]
+    """
+    # Try different field names for prompt
+    prompt = example.get("prompt") or example.get("instruction") or example.get("question") or ""
+
+    # Try different field names for code/response
+    response = example.get("response") or example.get("output") or example.get("code") or example.get("answer") or ""
+
+    # Skip if missing either part
+    if not prompt or not response:
+        return None
+
+    # Skip if too short (likely invalid)
+    if len(prompt) < 10 or len(response) < 10:
+        return None
+
+    # Truncate if too long
+    if len(prompt) > 800:
+        prompt = prompt[:800] + "..."
+    if len(response) > 1500:
+        # For code, try to keep it complete
+        response = response[:1500] + "\n# ... (truncated)"
+
+    return {
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt.strip()
+            },
+            {
+                "role": "assistant",
+                "content": response.strip()
+            }
+        ]
+    }
+
+
+def codeparrot_to_chat(example):
+    """
+    Convert CodeParrot clean code to chat format.
+
+    CodeParrot contains raw Python code. We create synthetic Q&A:
+    User: "Write Python code for [inferred purpose]"
+    Assistant: [code]
+
+    For better training, we extract docstrings or first comments as hints.
+    """
+    code = example.get("content") or example.get("code") or ""
+
+    # Skip empty or very short code
+    if not code or len(code) < 50:
+        return None
+
+    # Skip if too long (only take first portion)
+    if len(code) > 2000:
+        code = code[:2000]
+        # Try to cut at a complete function
+        last_def = code.rfind("\ndef ")
+        if last_def > 500:
+            code = code[:last_def]
+        code += "\n# ... (truncated)"
+
+    # Extract first line comment or docstring as hint
+    lines = code.split('\n')
+    hint = "this task"
+
+    # Look for docstring
+    for i, line in enumerate(lines[:10]):
+        if '"""' in line or "'''" in line:
+            # Found docstring
+            if i + 1 < len(lines):
+                hint = lines[i + 1].strip('"""\'').strip()[:100]
+            break
+        elif line.strip().startswith('#'):
+            # Found comment
+            hint = line.strip('#').strip()[:100]
+            break
+
+    # Create synthetic prompt
+    prompt = f"Write Python code for {hint}" if hint != "this task" else "Write Python code"
+
+    return {
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            },
+            {
+                "role": "assistant",
+                "content": code.strip()
             }
         ]
     }

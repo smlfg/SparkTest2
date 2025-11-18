@@ -16,6 +16,16 @@ Du kannst große, öffentliche Datasets von Hugging Face automatisch herunterlad
 - **Inhalt**: StackOverflow Fragen & Antworten
 - **Format**: Frage → Antwort
 
+### 3. Tiny Codes
+- **Quelle**: `nampdn-ai/tiny-codes`
+- **Inhalt**: Kleine Code-Snippets mit Erklärungen
+- **Format**: Programmier-Aufgabe → Code-Lösung
+
+### 4. CodeParrot
+- **Quelle**: `codeparrot/codeparrot-clean-train`
+- **Inhalt**: Saubere Python-Code Beispiele
+- **Format**: "Write Python code for [X]" → Code
+
 ## Verwendung
 
 ### Schritt 1: Dataset herunterladen
@@ -26,6 +36,12 @@ python scripts/download_hf_dataset.py wikipedia --samples 1000
 
 # StackOverflow (500 Beispiele)
 python scripts/download_hf_dataset.py stackoverflow --samples 500
+
+# Tiny Codes (300 Beispiele)
+python scripts/download_hf_dataset.py tiny-codes --samples 300
+
+# CodeParrot (500 Beispiele)
+python scripts/download_hf_dataset.py codeparrot --samples 500
 ```
 
 **Was passiert:**
@@ -45,6 +61,8 @@ python scripts/download_hf_dataset.py stackoverflow --samples 500
 # [2] example-classifier.json
 # [3] wikipedia.json          ← NEU!
 # [4] stackoverflow.json      ← NEU!
+# [5] tiny-codes.json         ← NEU!
+# [6] codeparrot.json         ← NEU!
 ```
 
 Das wars! 🎉
@@ -167,6 +185,59 @@ python scripts/download_hf_dataset.py --list
 }
 ```
 
+### Tiny Codes-Konvertierung
+
+**Original** (Tiny Codes):
+```json
+{
+  "prompt": "Create a function to check if a number is prime",
+  "response": "def is_prime(n):\n    if n < 2:\n        return False\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return False\n    return True"
+}
+```
+
+**Konvertiert** (Chat-Format):
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Create a function to check if a number is prime"
+    },
+    {
+      "role": "assistant",
+      "content": "def is_prime(n):\n    if n < 2:\n        return False\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return False\n    return True"
+    }
+  ]
+}
+```
+
+### CodeParrot-Konvertierung
+
+**Original** (CodeParrot):
+```json
+{
+  "content": "def calculate_fibonacci(n):\n    \"\"\"Calculate nth Fibonacci number.\"\"\"\n    if n <= 1:\n        return n\n    return calculate_fibonacci(n-1) + calculate_fibonacci(n-2)"
+}
+```
+
+**Konvertiert** (Chat-Format):
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Write Python code for Calculate nth Fibonacci number."
+    },
+    {
+      "role": "assistant",
+      "content": "def calculate_fibonacci(n):\n    \"\"\"Calculate nth Fibonacci number.\"\"\"\n    if n <= 1:\n        return n\n    return calculate_fibonacci(n-1) + calculate_fibonacci(n-2)"
+    }
+  ]
+}
+```
+
+**Hinweis:** Der User-Prompt wird automatisch aus Docstrings/Kommentaren extrahiert.
+
 ## Empfehlungen
 
 ### Wikipedia
@@ -199,6 +270,41 @@ python scripts/download_hf_dataset.py --list
 
 **Empfohlene Samples:** 500-1000
 
+### Tiny Codes
+
+**Gut für:**
+- ✅ Kleine, fokussierte Code-Aufgaben
+- ✅ Instruction-Following für Code
+- ✅ Verschiedene Programmiersprachen
+- ✅ Code-Generierung aus Beschreibung
+- ✅ Schnelle Iteration (kleine Samples)
+
+**Nicht gut für:**
+- ❌ Große, komplexe Projekte
+- ❌ System-Design
+- ❌ Nicht-Code Aufgaben
+
+**Empfohlene Samples:** 300-800
+
+### CodeParrot
+
+**Gut für:**
+- ✅ Python Code-Generierung
+- ✅ Clean Code Patterns
+- ✅ Realistische Code-Struktur
+- ✅ Lernen von Best Practices
+- ✅ Vollständige Funktionen/Klassen
+
+**Nicht gut für:**
+- ❌ Andere Programmiersprachen
+- ❌ Code-Erklärungen (nur Code)
+- ❌ Debugging/Fehlersuche
+- ❌ Interactive Probleme lösen
+
+**Empfohlene Samples:** 500-1000
+
+**Hinweis:** CodeParrot enthält nur Code ohne Kontext. Das Script erstellt automatisch synthetische Prompts basierend auf Docstrings/Kommentaren.
+
 ## Kombinierte Datasets
 
 Du kannst mehrere Datasets mischen:
@@ -207,15 +313,21 @@ Du kannst mehrere Datasets mischen:
 # 1. Lade mehrere Datasets
 python scripts/download_hf_dataset.py wikipedia --samples 500
 python scripts/download_hf_dataset.py stackoverflow --samples 500
+python scripts/download_hf_dataset.py tiny-codes --samples 300
+python scripts/download_hf_dataset.py codeparrot --samples 500
 
 # 2. Wähle beim Training
 ./iterate.sh wiki-model
 # -> Wähle wikipedia.json
 
-./iterate.sh code-model
+./iterate.sh code-helper
 # -> Wähle stackoverflow.json
 
-./iterate.sh mixed-model datasets/combined.json
+./iterate.sh code-gen
+# -> Wähle tiny-codes.json
+
+./iterate.sh python-expert
+# -> Wähle codeparrot.json
 ```
 
 ### Manuelles Mischen
@@ -223,22 +335,42 @@ python scripts/download_hf_dataset.py stackoverflow --samples 500
 ```python
 import json
 
-# Lade beide
+# Lade alle Datasets
 with open('datasets/wikipedia.json') as f:
     wiki = json.load(f)
 
 with open('datasets/stackoverflow.json') as f:
     stack = json.load(f)
 
-# Mische
-combined = wiki[:250] + stack[:250]  # Je 250 Beispiele
+with open('datasets/tiny-codes.json') as f:
+    tiny = json.load(f)
 
-# Speichere
-with open('datasets/combined.json', 'w') as f:
-    json.dump(combined, f, indent=2)
+with open('datasets/codeparrot.json') as f:
+    parrot = json.load(f)
+
+# Beispiel 1: Gemischtes Code + Knowledge Model
+combined_balanced = (
+    wiki[:200] +          # Allgemeinwissen
+    stack[:200] +         # Q&A Code-Hilfe
+    tiny[:200] +          # Code-Generierung
+    parrot[:200]          # Python Patterns
+)
+
+with open('datasets/combined-balanced.json', 'w') as f:
+    json.dump(combined_balanced, f, indent=2)
+
+# Beispiel 2: Nur Code-fokussiert
+code_focused = (
+    stack[:300] +         # Mehr Q&A
+    tiny[:400] +          # Mehr kleine Tasks
+    parrot[:300]          # Python Code
+)
+
+with open('datasets/code-focused.json', 'w') as f:
+    json.dump(code_focused, f, indent=2)
 ```
 
-Jetzt hast du `combined.json` mit 500 gemischten Beispielen!
+Jetzt hast du `combined-balanced.json` (800 Beispiele) und `code-focused.json` (1000 Beispiele)!
 
 ## Troubleshooting
 
@@ -316,27 +448,69 @@ Für sehr große Downloads (>10k Samples) kann vollständiger Download effizient
 Möchtest du andere Datasets? Schau auf:
 - https://huggingface.co/datasets
 
-Beliebte Optionen:
+Beliebte Optionen (noch nicht implementiert):
 - **OpenAssistant**: Multi-Turn Conversations
 - **Alpaca**: Instruction-Following
 - **ShareGPT**: Chat-Daten
 - **CodeSearchNet**: Code-Dokumentation
+- **The Stack**: Riesiges Multi-Language Code Dataset
+- **HumanEval**: Code-Evaluation Tasks
 
-Sag mir welche du brauchst und ich erweitere das Script! 🚀
+Du kannst eigene Datasets hinzufügen - siehe "Eigene Datasets hinzufügen" oben! 🚀
 
 ## Zusammenfassung
 
+### Verfügbare Datasets (Stand jetzt)
+
+| Dataset | Typ | Beispiele | Gut für |
+|---------|-----|-----------|---------|
+| **wikipedia** | Wissen | 1000-2000 | Allgemeinwissen, Definitionen |
+| **stackoverflow** | Code Q&A | 500-1000 | Technische Hilfe, Problemlösung |
+| **tiny-codes** | Code Snippets | 300-800 | Code-Generierung, kleine Tasks |
+| **codeparrot** | Python Code | 500-1000 | Python Patterns, Clean Code |
+
+### Quick Start
+
 ```bash
-# 1. Dataset herunterladen
+# 1. Dataset herunterladen (wähle eins)
 python scripts/download_hf_dataset.py wikipedia --samples 1000
+python scripts/download_hf_dataset.py stackoverflow --samples 500
+python scripts/download_hf_dataset.py tiny-codes --samples 300
+python scripts/download_hf_dataset.py codeparrot --samples 500
 
 # 2. Training starten
-./iterate.sh wiki-experiment
+./iterate.sh my-experiment
 
-# 3. Wikipedia-Dataset aus Liste wählen
-# [3] wikipedia.json ← Auswählen
+# 3. Dataset aus interaktiver Liste wählen
+# [3] wikipedia.json
+# [4] stackoverflow.json
+# [5] tiny-codes.json
+# [6] codeparrot.json
 
-# 4. Fertig! Model trainiert auf Wikipedia-Wissen
+# 4. Fertig! Model trainiert auf gewähltem Dataset
 ```
 
 **So einfach ist das!** 🎉
+
+### Empfohlene Kombinationen
+
+**Generalist-Modell** (Wissen + Code):
+```bash
+python scripts/download_hf_dataset.py wikipedia --samples 500
+python scripts/download_hf_dataset.py tiny-codes --samples 500
+# Dann manuell mischen (siehe "Kombinierte Datasets")
+```
+
+**Code-Experte** (Nur Programmierung):
+```bash
+python scripts/download_hf_dataset.py stackoverflow --samples 400
+python scripts/download_hf_dataset.py tiny-codes --samples 400
+python scripts/download_hf_dataset.py codeparrot --samples 400
+# = 1200 Code-Beispiele aus 3 Quellen
+```
+
+**Schnelles Prototyping** (Klein & schnell):
+```bash
+python scripts/download_hf_dataset.py tiny-codes --samples 100
+# Trainiert in ~2 Minuten
+```
